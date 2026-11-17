@@ -1,2 +1,31 @@
 # dao-playables
-Rekonstruksi mandiri 5 playables be-of-dao (CIRCUIT/CHAOS/GATHER/PANDORA/WAKE) — tulis ulang dari aturan, tanpa kode/aset sumber
+
+Rekonstruksi **mandiri** dari 5 playables interaktif [be-of-dao.com](https://be-of-dao.com) — karya DAO (© 2026).
+
+> ⚠️ **Bukan salinan, bukan fork.** Seluruh situs sumber berlisensi *All Rights Reserved* dan melarang copy/re-host/redistribusi. Yang kami pelajari hanya **mekanismenya**; kode, shader, aset, dan teks ditulis ulang dari nol. Lihat [`AUDIT-LISENSI.md`](./AUDIT-LISENSI.md).
+
+**Atribusi:** Terinspirasi oleh karya **be-of-dao / DAO** (be.of.dao@gmail.com · @be.of.dao · beofdao). Repo ini implementasi ulang independen; tidak ada afiliasi, endorsement, atau izin dari pemilik aslinya.
+
+## Urutan port
+
+| # | app | status | catatan |
+|---|---|---|---|
+| 1 | CIRCUIT 電 | ⬜ direncanakan | 61 sirkuit; simulasi + audio; tanpa 3D |
+| 2 | CHAOS 混沌 | ⬜ direncanakan | atraktor Lorenz, canvas 2D |
+| 3 | GATHER 聚 | ⬜ direncanakan | depth + partikel |
+| 4 | PANDORA 樸 | ⬜ direncanakan | Three.js generatif |
+| 5 | WAKE 森 | ⬜ direncanakan | Three.js + bloom |
+
+## Prinsip
+
+- Tulis ulang dari **aturan**, bukan dari kode/piksel sumber.
+- Pustaka open source (Three.js, ONNX Runtime Web, dsb.) dipakai dengan lisensi aslinya.
+- Atribusi ke DAO tampil di README tiap app dan footer halaman.
+- Tidak untuk dijual / tidak ada re-host karya asli.
+
+## Dokumen
+
+- [`AUDIT-LISENSI.md`](./AUDIT-LISENSI.md) — bukti lisensi & putusan tulis-ulang
+- `docs/re/<app>.md` — catatan reverse-engineering per app (mekanisme, parameter, keputusan desain sendiri)
+
+Stack: TypeScript + Vite (rencana), deploy Vercel project terpisah.

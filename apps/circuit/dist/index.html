@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CIRCUIT 電 — dao-playables (rekonstruksi mandiri)</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; margin: 0; }
+    body {
+      background: #0b0f10; color: #cfe3d6; min-height: 100vh;
+      font-family: 'SF Mono', ui-monospace, Menlo, monospace;
+      display: grid; grid-template-columns: 260px 1fr; grid-template-rows: 1fr;
+    }
+    #list { border-right: 1px solid rgba(120,180,150,0.15); padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+    .item {
+      all: unset; cursor: pointer; padding: 8px 10px; border-radius: 6px; font-size: 13px;
+      color: #9db8a8; border: 1px solid transparent;
+    }
+    .item:hover { background: rgba(120,180,150,0.08); color: #e6f2ea; }
+    .item.active { background: rgba(126,224,168,0.12); color: #7ee0a8; border-color: rgba(126,224,168,0.35); }
+    #main { padding: 28px 36px; display: flex; flex-direction: column; gap: 14px; max-width: 980px; }
+    h1 { font-size: 22px; color: #e6f2ea; letter-spacing: 0.06em; }
+    h1 span { color: #7ee0a8; margin-left: 10px; }
+    #desc { font-size: 13px; color: #9db8a8; max-width: 60ch; }
+    #fchar { font-size: 12px; color: #f0c46a; }
+    #scope { width: 100%; height: 340px; border: 1px solid rgba(120,180,150,0.2); border-radius: 8px; }
+    #controls { display: flex; gap: 18px; align-items: center; font-size: 13px; }
+    #excite { width: 160px; accent-color: #7ee0a8; }
+    #play {
+      all: unset; cursor: pointer; padding: 7px 14px; border-radius: 6px; font-size: 13px;
+      border: 1px solid rgba(126,224,168,0.4); color: #7ee0a8;
+    }
+    #play:hover { background: rgba(126,224,168,0.12); }
+    #readout { font-size: 12px; color: #9db8a8; }
+    footer { font-size: 11px; color: #5f7268; margin-top: auto; }
+    footer a { color: #7ee0a8; text-decoration: none; }
+    @media (max-width: 720px) {
+      body { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+      #list { flex-direction: row; flex-wrap: wrap; border-right: none; border-bottom: 1px solid rgba(120,180,150,0.15); }
+    }
+  </style>
+  <script type="module" crossorigin src="./assets/index-BmmUWsgA.js"></script>
+</head>
+<body>
+  <div id="list"></div>
+  <div id="main">
+    <h1><span>電</span><span id="title">—</span></h1>
+    <p id="desc">—</p>
+    <span id="fchar">—</span>
+    <canvas id="scope"></canvas>
+    <div id="controls">
+      <button id="play">▶ Putar suara</button>
+      <label>eksitasi <input id="excite" type="range" min="0.2" max="5" step="0.1" value="1" /> <span id="excite-val">1.0 V</span></label>
+      <span id="readout">—</span>
+    </div>
+    <footer>
+      Implementasi ulang mandiri — terinspirasi karya <a href="https://be-of-dao.com" rel="noopener">be-of-dao / DAO</a>.
+      Bukan salinan: kode & desain ditulis dari nol. © 2026 Niumination.
+    </footer>
+  </div>
+</body>
+</html>
