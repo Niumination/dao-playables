@@ -138,17 +138,24 @@ function twist(face: Face, dir = 1) {
   animStep()
 }
 function checkSolved() {
-  const ok = tiles.every(t => {
-    for (const f of t.userData.faces as Face[]) {
-      const n = axisOf(f)
+  const faces: Face[] = ['U', 'D', 'L', 'R', 'F', 'B']
+  let solved = true
+  for (const f of faces) {
+    const n = axisOf(f)
+    const stickerCols = new Set<number>()
+    for (const t of tiles) {
       const st = t.children.find(c => (c as THREE.Mesh).geometry === stickerGeo)
       if (!st) continue
-      const wn = n.clone().applyQuaternion(t.quaternion)
-      if (wn.dot(n) < 0.99) return false
+      // sticker ini menempel di muka f bila normalnya sejajar n (dalam ruang kubus)
+      const local = st.position.clone().normalize()
+      const world = local.clone().applyQuaternion(t.quaternion)
+      if (world.dot(n) > 0.99) {
+        stickerCols.add(((st as THREE.Mesh).material as THREE.MeshStandardMaterial).color.getHex())
+      }
     }
-    return true
-  })
-  if (ok && moves > 0) { msgEl.textContent = '✔ SEMUA MUKA RATA'; win() }
+    if (stickerCols.size > 1) { solved = false; break }
+  }
+  if (solved && moves > 0) { msgEl.textContent = '✔ SEMUA MUKA RATA'; win() }
 }
 function scramble() {
   const faces: Face[] = ['U', 'D', 'L', 'R', 'F', 'B']
