@@ -26,3 +26,18 @@
 ## Jarak dengan sumber (sengaja)
 
 - Tidak ada berkas/kode/aset dari situs sumber.
+
+## v0.2 — hutan + sequencer (18 Nov 2026)
+
+Setelah koreksi arah, WAKE ditulis ulang dari mekanisme aslinya: **sentuh benda → bunyi + sequencer**.
+
+- Hutan **point cloud** 96 pohon (batang+kanopi) + 22 batu; 8 lampu jalan (intensitas napas).
+- **Klik pohon/batu** → bunyi; nada dari jarak kamera; toggle langkah sequencer.
+- **Sequencer 8 langkah** (klik sel, tombol play, BPM 60–160) → osc Web Audio.
+- **Kamera jalan**: WASD/panah, drag = lihat; batas dunia 40 m.
+- Bloom (UnrealBloomPass) via EffectComposer.
+
+## Jarak dengan sumber (sengaja dipertahankan)
+
+- Pohon/batu prosedural milik sendiri (bukan aset DAO).
+- Sequencer 8 langkah & nada (110…293,7 Hz) dipilih sendiri.

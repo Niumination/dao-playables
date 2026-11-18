@@ -26,3 +26,16 @@
 
 - Versi sumber memakai model kedalaman (ONNX) untuk kedalaman partikel; kami **tidak memuat model** — kedalaman disimulasikan lewat kecepatan/kepadatan, tanpa unduhan bobot.
 - Tidak ada berkas/kode/aset dari situs sumber.
+
+## v0.2 — unggah gambar → point cloud (18 Nov 2026)
+
+Setelah koreksi arah, GATHER ditulis ulang dari mekanisme aslinya: **gambar jadi point cloud**.
+
+- **Unggah gambar** (input file / drag-drop) → sampel grid → tiap piksel jadi titik; **kedalaman = kecerahan**.
+- Slider **energi** (gather↔buyar) & **spin**; rotasi 3D sederhana + proyeksi z.
+- Tanpa gambar: cincin contoh 5000 titik.
+- Warna titik = warna piksel asli gambar.
+
+## Jarak dengan sumber (sengaja dipertahankan)
+
+- Tidak ada pemrosesan audio/mic dari sumber (versi kita murni visual + parameter).

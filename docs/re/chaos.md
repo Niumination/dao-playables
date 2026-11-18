@@ -27,3 +27,17 @@
 
 - Tidak ada berkas/kode/aset dari situs sumber.
 - Nilai parameter sama (konstanta standar σ/ρ/β — bukan "rahasia" milik siapa pun).
+
+## v0.2 — synth atraktor (18 Nov 2026)
+
+Setelah koreksi arah, CHAOS ditulis ulang dari mekanisme aslinya: **synth yang dimainkan atraktor**.
+
+- RK4 Lorenz (σ/ρ/β slider) menggerakkan **pitch** (indeks nada dari z), **filter lowpass** (|y|), **gain/velocity** (x).
+- Dua osilator (saw + triangle) → lowpass → master; toggle audio.
+- **Keyboard 16 nada** (a–p) mengatur nada dasar; gerak atraktor memodulasi.
+- Jejak 900 titik digambar di canvas 2D.
+
+## Jarak dengan sumber (sengaja dipertahankan)
+
+- Nilai σ/ρ/β bawaan (10/28/8⁄3) adalah konstanta standar Lorenz, bukan data DAO.
+- Patch synth dirancang sendiri.

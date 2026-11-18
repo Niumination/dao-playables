@@ -27,3 +27,17 @@
 ## Jarak dengan sumber (sengaja)
 
 - Tidak ada berkas/kode/aset dari situs sumber; noise & material milik sendiri.
+
+## v0.2 — puzzle kubus (18 Nov 2026)
+
+Setelah koreksi arah, PANDORA ditulis ulang dari mekanisme aslinya: **puzzle kubus**, bukan heightmap.
+
+- **16 ubin kaca** (4×4) di piring, 4 muka warna; **klik ubin = putar blok 2×2** searah jarum jam, ubin ikut berganti muka.
+- Tombol **acak** (24 putaran), **undo**, **solve**, **susun ulang**; penghitung langkah.
+- Drag = putar piring; kamera orbit.
+- Build Three.js (ubin kaca transparan + emissive).
+
+## Jarak dengan sumber (sengaja dipertahankan)
+
+- Layout 4×4 & logika putar 2×2 adalah mekanik generik puzzle, bukan kode DAO.
+- Estetika bukan tiruan piksel.

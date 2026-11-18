@@ -10,11 +10,11 @@ Rekonstruksi **mandiri** dari 5 playables interaktif [be-of-dao.com](https://be-
 
 | # | app | status | catatan |
 |---|---|---|---|
-| 1 | CIRCUIT 電 | ✅ v0.1 | 16 sirkuit; solver MNA sendiri; oscilloscope + audio |
-| 2 | CHAOS 混沌 | ✅ v0.1 | atraktor Lorenz RK4, 700 partikel, panel parameter |
-| 3 | GATHER 聚 | ✅ v0.1 | partikel gravitasi mengumpul ke inti, panel parameter |
-| 4 | PANDORA 樸 | ✅ v0.1 | heightmap fBm Three.js, 12.321 titik, panel parameter |
-| 5 | WAKE 森 | ✅ v0.1 | hutan prosedural + bloom, panel parameter |
+| 1 | CIRCUIT 電 | ✅ v0.2 | **instrumen**: 4 slot R/C/L (ganti jenis + drag nilai), mainkan dari keyboard 16 nada, respons RC/LC/RLC → oscilloscope + audio |
+| 2 | CHAOS 混沌 | ✅ v0.2 | **synth atraktor**: RK4 Lorenz menggerakkan pitch/filter/gain, keyboard nada, audio toggle |
+| 3 | GATHER 聚 | ✅ v0.2 | **unggah gambar → point cloud** (kedalaman = kecerahan), energi buyar/gather + spin |
+| 4 | PANDORA 樸 | ✅ v0.2 | **puzzle kubus**: 16 ubin kaca 4 muka, klik putar 2×2, scramble/undo/solve |
+| 5 | WAKE 森 | ✅ v0.2 | **hutan point cloud**: klik pohon/batu → bunyi, sequencer 8 langkah, kamera jalan WASD |
 
 ## Prinsip
 
@@ -28,4 +28,8 @@ Rekonstruksi **mandiri** dari 5 playables interaktif [be-of-dao.com](https://be-
 - [`AUDIT-LISENSI.md`](./AUDIT-LISENSI.md) — bukti lisensi & putusan tulis-ulang
 - `docs/re/<app>.md` — catatan reverse-engineering per app (mekanisme, parameter, keputusan desain sendiri)
 
-Stack: TypeScript + Vite (rencana), deploy Vercel project terpisah.
+Stack: TypeScript + Vite + Three.js, deploy Vercel project `dao-playables`.
+
+Live: https://dao-playables.vercel.app
+
+> v0.1 sempat membangun "nuansa visual" bukan mekanisme; v0.2 (18 Nov 2026) menulis ulang ke mekanisme aslinya setelah audit lisensi & koreksi arah. Lihat `docs/re/<app>.md`.
