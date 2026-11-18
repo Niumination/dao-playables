@@ -142,7 +142,7 @@ function checkSolved() {
   let flat = true
   for (const f of faces) {
     const n = axisOf(f)
-    const d = n.clone().multiplyScalar(SIZE - 1) * (1 + GAP)
+    const d = n.clone().multiplyScalar((SIZE - 1) * (1 + GAP))
     const cells: THREE.Vector3[] = []
     for (const tile of tiles) {
       if (Math.abs(tile.userData.home.dot(n) - d.dot(n)) < 0.01) cells.push(tile.userData.home)
