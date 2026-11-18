@@ -170,6 +170,7 @@ function regen() {
   stat.textContent = `${trees.length} pohon · ${rocks.length} batu · sequencer ${NSTEP} langkah`
 }
 regenBtn.onclick = regen
+regen()
 
 // --- kamera jalan ---
 let yaw = 0, pitch = 0
