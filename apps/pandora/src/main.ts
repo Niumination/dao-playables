@@ -104,7 +104,7 @@ const moving = new THREE.Group()
 scene.add(moving)
 let moves = 0, history: { face: Face; dir: number }[] = []
 let selected: Face = 'F'
-function twist(face: Face, dir = 1) {
+function twist(face: Face, dir = 1, record = true) {
   const n = axisOf(face)
   const layer = tiles.filter(t => Math.abs(t.position.clone().sub(n.clone().multiplyScalar(n.dot(t.position))).length()) < 0.01)
   const sel = layer.length ? layer : tiles
@@ -128,8 +128,7 @@ function twist(face: Face, dir = 1) {
       t.userData.home = t.position.clone()
     }
     moving.rotation.set(0, 0, 0)
-    moves++
-    history.push({ face, dir })
+    if (record) { moves++; history.push({ face, dir }) }
     movesEl.textContent = String(moves)
     msgEl.textContent = `muka ${face} ${dir > 0 ? 'searah' : 'berlawanan'} jarum jam · ${sel.length} ubin`
     blip(face)
@@ -178,10 +177,9 @@ function scramble() {
 function undo() {
   const last = history.pop()
   if (!last) { msgEl.textContent = 'tidak ada langkah'; return }
-  twist(last.face, -last.dir)
-  history.pop() // twist menambah riwayat; buang
   moves = Math.max(0, moves - 1)
   movesEl.textContent = String(moves)
+  twist(last.face, -last.dir, false)
 }
 function solve() {
   msgEl.textContent = 'menyelesaikan…'
@@ -189,8 +187,8 @@ function solve() {
   const iv = setInterval(() => {
     if (i < 0) { clearInterval(iv); msgEl.textContent = 'selesai'; return }
     const h = history[i]
-    twist(h.face, -h.dir)
-    history.pop(); history.pop()
+    history.pop()
+    twist(h.face, -h.dir, false)
     i--
   }, 220)
 }
