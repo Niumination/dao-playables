@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 
 export default defineConfig({
-  base: './',
+  base: '/pandora/',
   build: { outDir: 'dist', target: 'es2020' },
   server: { port: 8814 },
 })
