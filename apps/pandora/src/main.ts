@@ -151,7 +151,7 @@ function checkSolved() {
     const d = n.clone().multiplyScalar(SIZE - 1)
     const cells: THREE.Vector3[] = []
     for (const tile of tiles) {
-      const dist = tile.userData.home.dot(n)
+      const dist = tile.position.dot(n)
       if (Math.abs(dist - d.dot(n)) < 0.01) cells.push(tile.userData.home)
     }
     if (cells.length === 0) { flat = false; break }
