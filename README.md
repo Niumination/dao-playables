@@ -13,7 +13,7 @@ Rekonstruksi **mandiri** dari 5 playables interaktif [be-of-dao.com](https://be-
 | 1 | CIRCUIT 電 | ✅ v0.1 | 16 sirkuit; solver MNA sendiri; oscilloscope + audio |
 | 2 | CHAOS 混沌 | ✅ v0.1 | atraktor Lorenz RK4, 700 partikel, panel parameter |
 | 3 | GATHER 聚 | ✅ v0.1 | partikel gravitasi mengumpul ke inti, panel parameter |
-| 4 | PANDORA 樸 | ⬜ direncanakan | Three.js generatif |
+| 4 | PANDORA 樸 | ✅ v0.1 | heightmap fBm Three.js, 12.321 titik, panel parameter |
 | 5 | WAKE 森 | ⬜ direncanakan | Three.js + bloom |
 
 ## Prinsip
