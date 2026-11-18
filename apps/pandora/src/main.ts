@@ -151,8 +151,10 @@ function checkSolved() {
     const d = n.clone().multiplyScalar((SIZE - 1) * (1 + GAP))
     const cells: THREE.Vector3[] = []
     for (const tile of tiles) {
-      if (Math.abs(tile.userData.home.dot(n) - d.dot(n)) < 0.01) cells.push(tile.userData.home)
+      const dist = tile.userData.home.dot(n)
+      if (Math.abs(dist - d.dot(n)) < 0.01) cells.push(tile.userData.home)
     }
+    ;(window as unknown as { __dbg: unknown }).__dbg = { f, d: d.dot(n), n: n.toArray(), cnt: cells.length, homes: tiles.slice(0,3).map(t => t.userData.home.toArray()) }
     if (cells.length === 0) { flat = false; break }
     const cols = new Set<number>()
     for (const tile of tiles) {
