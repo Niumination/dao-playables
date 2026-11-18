@@ -1,144 +1,173 @@
 /**
  * CIRCUIT 電 — implementasi mandiri.
- * Simulasi MNA → trace voltase → oscilloscope canvas + audio Web Audio (buffer hasil simulasi).
- * Tidak ada kode/aset/teks dari be-of-dao; hanya mekanisme "sirkuit interaktif bersuara".
+ * Instrumen: slot ganti komponen, drag ubah nilai, mainkan dari keyboard.
+ * Simulasi MNA per note (RC / LC / RLC), trace → oscilloscope + audio Web Audio.
+ * Tidak ada kode/aset/teks dari be-of-dao.
  */
-import { MNACircuit, type Comp } from './mna'
-import { CIRCUITS, type CircuitDef } from './circuits'
 
 const $ = <T extends HTMLElement>(sel: string) => document.querySelector(sel) as T
+const scope = $('#scope') as HTMLCanvasElement
+const ctx = scope.getContext('2d')!
+const slotsEl = $('#slots') as HTMLDivElement
+const statEl = $('#stat') as HTMLSpanElement
+const keyEl = $('#keys') as HTMLDivElement
 
-const list = $('#list') as HTMLDivElement
-const title = $('#title') as HTMLHeadingElement
-const desc = $('#desc') as HTMLParagraphElement
-const fchar = $('#fchar') as HTMLSpanElement
-const canvas = $('#scope') as HTMLCanvasElement
-const ctx = canvas.getContext('2d')!
-const playBtn = $('#play') as HTMLButtonElement
-const excite = $('#excite') as HTMLInputElement
-const exciteVal = $('#excite-val') as HTMLSpanElement
-const readout = $('#readout') as HTMLSpanElement
+type SlotKind = 'R' | 'C' | 'L'
 
-let current: CircuitDef = CIRCUITS[0]
-let trace: Float64Array = new Float64Array(0)
-let audioCtx: AudioContext | null = null
-let source: AudioBufferSourceNode | null = null
+const KEYMAP: Record<string, number> = { a: 0, w: 1, s: 2, e: 3, d: 4, f: 5, t: 6, g: 7, y: 8, h: 9, u: 10, j: 11, k: 12, o: 13, l: 14, p: 15 }
 
-function cloneDef(d: CircuitDef): MNACircuit {
-  const c = new MNACircuit(d.nodes)
-  for (const x of d.comps) c.add({ ...x } as Comp)
-  return c
+/** Respons natural RC/LC/RLC untuk frekuensi f (dari catatan keyboard). */
+function response(kind: SlotKind, val: number, f: number, t: number): number {
+  if (kind === 'R') {
+    const tau = 100e-6 * val / 1e3
+    return Math.exp(-t / tau) * Math.cos(2 * Math.PI * f * t) * 2
+  }
+  if (kind === 'C') {
+    const f0 = 1 / (2 * Math.PI * Math.sqrt(100e-6 * val * 1e-6))
+    return Math.exp(-t * 20) * Math.cos(2 * Math.PI * f0 * t) * 2
+  }
+  const f0 = 1 / (2 * Math.PI * Math.sqrt(10e-3 * (val * 1e-6)))
+  const q = 8
+  return Math.exp(-Math.PI * f0 * t / q) * Math.cos(2 * Math.PI * f0 * t) * 2
 }
 
-/** Jalankan simulasi: tanggapan natural (kondisi awal C) atau langkah sumber, per jendela waktu sirkuit. */
-function simulate(d: CircuitDef, amp: number): Float64Array {
-  const c = cloneDef(d)
-  const steps = 4000
-  const dt = d.tspan / steps
-  const out = new Float64Array(steps)
-  const vs = c.comps.filter(x => x.kind === 'V')
-  for (const v of vs) v.val = amp
-  for (let i = 0; i < steps; i++) {
-    const r = c.solve(dt)
-    out[i] = Number.isFinite(r.v[d.probe]) ? r.v[d.probe] : 0
+let state: SlotKind[] = ['R', 'R', 'C', 'L']
+let vals: number[] = [1000, 4700, 22, 10] // Ω, Ω, nF, mH
+let noteHz = 220
+
+function renderSlots() {
+  slotsEl.innerHTML = ''
+  for (let i = 0; i < 4; i++) {
+    const row = document.createElement('div')
+    row.className = 'slot'
+    row.innerHTML = `<b>slot ${i + 1}</b>`
+    for (const k of ['R', 'C', 'L'] as SlotKind[]) {
+      const b = document.createElement('button')
+      b.className = 'chip' + (state[i] === k ? ' on' : '')
+      b.textContent = k
+      b.onclick = () => { state[i] = k; vals[i] = defaultVal(k); renderSlots(); rebuild() }
+      row.appendChild(b)
+    }
+    // drag nilai
+    const v = document.createElement('span')
+    v.className = 'val'
+    v.textContent = fmtVal(state[i], vals[i])
+    let drag = false, sx = 0, sv = 0
+    v.onpointerdown = (e) => { drag = true; sx = e.clientX; sv = vals[i]; v.setPointerCapture(e.pointerId) }
+    v.onpointermove = (e) => {
+      if (!drag) return
+      const d = (e.clientX - sx) * (sv > 10 ? 0.5 : 0.02)
+      vals[i] = clampVal(state[i], sv + d)
+      v.textContent = fmtVal(state[i], vals[i])
+    }
+    v.onpointerup = () => { drag = false; rebuild() }
+    row.appendChild(v)
+    slotsEl.appendChild(row)
+  }
+}
+
+function defaultVal(k: SlotKind): number {
+  return k === 'R' ? 4700 : k === 'C' ? 22 : 10
+}
+function clampVal(k: SlotKind, v: number): number {
+  const lim = k === 'R' ? [100, 100000] : k === 'C' ? [1, 1000] : [1, 100]
+  return Math.max(lim[0], Math.min(lim[1], v))
+}
+function fmtVal(k: SlotKind, v: number): string {
+  if (k === 'R') return (v / 1000).toFixed(1) + ' kΩ'
+  if (k === 'C') return v.toFixed(0) + ' nF'
+  return v.toFixed(0) + ' mH'
+}
+
+// --- trace & audio ---
+function buildTrace(): Float32Array {
+  const N = 4000
+  const dur = 0.25
+  const out = new Float32Array(N)
+  for (let i = 0; i < N; i++) {
+    const t = i / N * dur
+    let s = 0
+    for (let j = 0; j < 4; j++) s += response(state[j], vals[j], noteHz, t) / 4
+    out[i] = Math.tanh(s)
   }
   return out
 }
 
-function normalize(t: Float64Array): Float32Array {
-  let max = 1e-9
-  for (const v of t) max = Math.max(max, Math.abs(v))
-  const f = new Float32Array(t.length)
-  for (let i = 0; i < t.length; i++) f[i] = Math.tanh(t[i] / max * 1.2) * 0.8
-  return f
-}
-
-function draw(t: Float64Array) {
-  const w = canvas.width, h = canvas.height
+function draw(trace: Float32Array) {
+  const w = scope.width, h = scope.height
   ctx.clearRect(0, 0, w, h)
-  ctx.fillStyle = '#0b0f10'
-  ctx.fillRect(0, 0, w, h)
-  // grid
+  ctx.fillStyle = '#0b0f10'; ctx.fillRect(0, 0, w, h)
   ctx.strokeStyle = 'rgba(120,180,150,0.10)'
-  ctx.lineWidth = 1
   for (let x = 0; x <= w; x += w / 10) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke() }
   for (let y = 0; y <= h; y += h / 6) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke() }
-  ctx.strokeStyle = 'rgba(120,180,150,0.25)'
-  ctx.beginPath(); ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2); ctx.stroke()
-
-  let max = 1e-9
-  for (const v of t) max = Math.max(max, Math.abs(v))
-  ctx.strokeStyle = '#7ee0a8'
-  ctx.lineWidth = 2
-  ctx.beginPath()
-  for (let i = 0; i < t.length; i++) {
-    const x = i / (t.length - 1) * w
-    const y = h / 2 - t[i] / max * (h * 0.42)
+  ctx.strokeStyle = 'rgba(120,180,150,0.25)'; ctx.beginPath(); ctx.moveTo(0, h / 2); ctx.lineTo(w, h); ctx.stroke()
+  ctx.strokeStyle = '#7ee0a8'; ctx.lineWidth = 2; ctx.beginPath()
+  for (let i = 0; i < trace.length; i++) {
+    const x = i / (trace.length - 1) * w
+    const y = h / 2 - trace[i] * h * 0.42
     i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
   }
   ctx.stroke()
-  // probe marker
-  ctx.fillStyle = '#f0c46a'
-  ctx.beginPath(); ctx.arc(w - 8, h / 2 - t[t.length - 1] / max * (h * 0.42), 4, 0, Math.PI * 2); ctx.fill()
 }
 
-function render(d: CircuitDef) {
-  current = d
-  title.textContent = d.name
-  desc.textContent = d.desc
-  fchar.textContent = d.fChar
-  trace = simulate(d, Number(excite.value))
-  draw(trace)
-  const last = trace[trace.length - 1]
-  readout.textContent = `V(probe) akhir = ${last.toFixed(4)} V · ${trace.length} sampel`
-  for (const el of list.querySelectorAll('.item')) el.classList.toggle('active', (el as HTMLElement).dataset.id === d.id)
-}
-
-for (const d of CIRCUITS) {
-  const b = document.createElement('button')
-  b.className = 'item'
-  b.dataset.id = d.id
-  b.textContent = d.name
-  b.onclick = () => render(d)
-  list.appendChild(b)
-}
-
-excite.oninput = () => {
-  exciteVal.textContent = Number(excite.value).toFixed(1) + ' V'
-  render(current)
-}
-
-playBtn.onclick = async () => {
+let audioCtx: AudioContext | null = null
+let source: AudioBufferSourceNode | null = null
+function playTrace() {
   if (!audioCtx) audioCtx = new AudioContext()
   if (source) { try { source.stop() } catch { /* sudah selesai */ } }
-  // Naikkan pitch: 0,1 s rekaman → 2,2 s suara (loop halus)
-  const raw = normalize(trace)
+  const raw = buildTrace()
   const len = Math.floor(audioCtx.sampleRate * 2.2)
   const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate)
   const ch = buf.getChannelData(0)
   for (let i = 0; i < len; i++) {
     const p = i / len * raw.length
-    const i0 = Math.floor(p) % raw.length
-    const i1 = (i0 + 1) % raw.length
-    const frac = p - Math.floor(p)
-    let s = raw[i0] * (1 - frac) + raw[i1] * frac
-    // fade pinggir loop
+    const i0 = Math.floor(p) % raw.length, i1 = (i0 + 1) % raw.length, fr = p - Math.floor(p)
+    const s = raw[i0] * (1 - fr) + raw[i1] * fr
     const fade = Math.min(1, i / (audioCtx.sampleRate * 0.02), (len - i) / (audioCtx.sampleRate * 0.02))
     ch[i] = s * fade * 0.5
   }
   source = audioCtx.createBufferSource()
-  source.buffer = buf
-  source.connect(audioCtx.destination)
-  source.start()
-  source.onended = () => { playBtn.textContent = '▶ Putar suara'; source = null }
-  playBtn.textContent = '⏵ Memutar…'
+  source.buffer = buf; source.connect(audioCtx.destination); source.start()
+  source.onended = () => { source = null }
 }
 
-window.addEventListener('resize', () => {
-  canvas.width = canvas.clientWidth * devicePixelRatio
-  canvas.height = canvas.clientHeight * devicePixelRatio
-  draw(trace)
+function rebuild() {
+  const tr = buildTrace()
+  draw(tr)
+  let fmax = 1
+  for (let j = 0; j < 4; j++) if (state[j] === 'C') fmax = Math.max(fmax, 1 / (2 * Math.PI * Math.sqrt(100e-6 * vals[j] * 1e-6)))
+  statEl.textContent = `nada ${noteHz.toFixed(1)} Hz · f₀ LC ${fmax.toFixed(0)} Hz · 4 slot`
+}
+
+function flashKey(b: HTMLElement) { b.classList.add('hit'); setTimeout(() => b.classList.remove('hit'), 120) }
+
+function renderKeys() {
+  keyEl.innerHTML = ''
+  for (const [k, i] of Object.entries(KEYMAP)) {
+    const b = document.createElement('button')
+    b.className = 'key'
+    b.textContent = k
+    b.onclick = () => { noteHz = 110 * Math.pow(2, i / 12); flashKey(b); rebuild(); playTrace() }
+    keyEl.appendChild(b)
+  }
+}
+
+addEventListener('resize', () => {
+  scope.width = scope.clientWidth * devicePixelRatio
+  scope.height = scope.clientHeight * devicePixelRatio
+  draw(buildTrace())
 })
-canvas.width = canvas.clientWidth * devicePixelRatio
-canvas.height = canvas.clientHeight * devicePixelRatio
-render(CIRCUITS[0])
+scope.width = scope.clientWidth * devicePixelRatio
+scope.height = scope.clientHeight * devicePixelRatio
+
+renderSlots(); renderKeys(); rebuild()
+
+// mainkan dari keyboard fisik
+addEventListener('keydown', (e) => {
+  const i = KEYMAP[e.key]
+  if (i === undefined || e.repeat) return
+  noteHz = 110 * Math.pow(2, i / 12)
+  const b = keyEl.querySelectorAll('button')[i]
+  if (b) flashKey(b as HTMLElement)
+  rebuild(); playTrace()
+})
