@@ -10,6 +10,10 @@ const ctx = canvas.getContext('2d')!
 const stat = document.getElementById('stat') as HTMLSpanElement
 const fileInput = document.getElementById('file') as HTMLInputElement
 const dropEl = document.getElementById('drop') as HTMLDivElement
+const lightEl = document.getElementById('light') as HTMLInputElement
+const glowEl = document.getElementById('glow') as HTMLInputElement
+const noiseEl = document.getElementById('noise') as HTMLInputElement
+const presetEl = document.getElementById('preset') as HTMLSelectElement
 const energyEl = document.getElementById('energy') as HTMLInputElement
 const spinEl = document.getElementById('spin') as HTMLInputElement
 const resetBtn = document.getElementById('reset') as HTMLButtonElement
@@ -18,7 +22,7 @@ const sampleEl = document.getElementById('sample') as HTMLSpanElement
 let W = 0, H = 0, DPR = 1
 type P = { sx: number; sy: number; x: number; y: number; z: number; vx: number; vy: number; r: number; g: number; b: number }
 let pts: P[] = []
-let energy = 0.5, spin = 0.4
+let energy = 0.5, spin = 0.4, light = 0.6, glow = 0.4, noise = 0.2, preset = 'gather'
 let hasImage = false
 
 function resize() {
@@ -100,8 +104,8 @@ function loadFile(f: File) {
   r.readAsDataURL(f)
 }
 
-energyEl.oninput = () => { energy = Number(energyEl.value); ;(document.getElementById('e-v') as HTMLSpanElement).textContent = energy.toFixed(2) }
-spinEl.oninput = () => { spin = Number(spinEl.value); ;(document.getElementById('s-v') as HTMLSpanElement).textContent = spin.toFixed(2) }
+energyEl.oninput = () => { energy = Number(energyEl.value); ;(document.getElementById('energy-v') as HTMLSpanElement).textContent = energy.toFixed(2) }
+spinEl.oninput = () => { spin = Number(spinEl.value); ;(document.getElementById('spin-v') as HTMLSpanElement).textContent = spin.toFixed(2) }
 resetBtn.onclick = () => seed()
 
 let mx = 0, my = 0
@@ -120,6 +124,9 @@ function frame() {
     // spin pelan
     p.vx += -p.y * spin * 0.0006
     p.vy += p.x * spin * 0.0006
+    // noise: getaran acak
+    p.vx += (Math.random() - 0.5) * noise * 0.9
+    p.vy += (Math.random() - 0.5) * noise * 0.9
     p.vx *= 0.94; p.vy *= 0.94
     p.x += p.vx; p.y += p.vy
   }
@@ -130,11 +137,19 @@ function frame() {
     const y3 = p.x * Math.sin(a) + p.y * Math.cos(a)
     const px = cx + x3, py = cy + y3 * 0.6 - p.z * 0.3
     if (px < 0 || px > W || py < 0 || py > H) continue
-    const s = (p.z / 260 + 0.4) * 1.6
-    ctx.fillStyle = `rgb(${p.r},${p.g},${p.b})`
+    let rr = p.r, gg = p.g, bb = p.b
+    // glow: cerahkan tepi
+    const lum = (p.r + p.g + p.b) / 3
+    const boost = glow * (lum / 255)
+    rr = Math.min(255, rr + boost * 90); gg = Math.min(255, gg + boost * 90); bb = Math.min(255, bb + boost * 120)
+    // light: naikkan keseluruhan
+    const li = 1 + light * 0.6
+    rr = Math.min(255, rr * li); gg = Math.min(255, gg * li); bb = Math.min(255, bb * li)
+    const s = (p.z / 260 + 0.4) * (1 + glow * 0.8) * 1.6
+    ctx.fillStyle = `rgb(${rr | 0},${gg | 0},${bb | 0})`
     ctx.fillRect(px, py, Math.max(1, s), Math.max(1, s))
   }
-  stat.textContent = `energi ${(energy * 100).toFixed(0)}% · spin ${spin.toFixed(2)} · ${hasImage ? 'gambar' : 'contoh'}`
+  stat.textContent = `preset ${preset} · energi ${(energy * 100).toFixed(0)}% · spin ${spin.toFixed(2)} · light ${light.toFixed(2)} · glow ${glow.toFixed(2)} · noise ${noise.toFixed(2)} · ${hasImage ? 'gambar' : 'contoh'}`
   requestAnimationFrame(frame)
 }
 
