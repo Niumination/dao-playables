@@ -148,13 +148,12 @@ function checkSolved() {
   let flat = true
   for (const f of faces) {
     const n = axisOf(f)
-    const d = n.clone().multiplyScalar((SIZE - 1) * (1 + GAP))
+    const d = n.clone().multiplyScalar(SIZE - 1)
     const cells: THREE.Vector3[] = []
     for (const tile of tiles) {
       const dist = tile.userData.home.dot(n)
       if (Math.abs(dist - d.dot(n)) < 0.01) cells.push(tile.userData.home)
     }
-    ;(window as unknown as { __dbg: unknown }).__dbg = { f, d: d.dot(n), cnt: cells.length, homes: tiles.map(t => t.userData.home.toArray()), dot0: tiles.map(t => t.userData.home.dot(n)) }
     if (cells.length === 0) { flat = false; break }
     const cols = new Set<number>()
     for (const tile of tiles) {
