@@ -145,18 +145,16 @@ function twist(face: Face, dir = 1, record = true) {
 }
 function checkSolved() {
   const faces: Face[] = ['U', 'D', 'L', 'R', 'F', 'B']
-  ;(window as unknown as { __dbg: Record<string, unknown> }).__dbg = {}
   let flat = true
   for (const f of faces) {
     const n = axisOf(f)
-    const d = n.clone().multiplyScalar(SIZE - 1)
+    const span = (SIZE - 1) / 2
+    const d = n.clone().multiplyScalar(span)
     const cells: THREE.Mesh[] = []
     for (const tile of tiles) {
-      const dist = tile.position.clone().dot(n)
+      const dist = tile.position.dot(n)
       if (Math.abs(dist - d.dot(n)) < 0.01) cells.push(tile)
     }
-    const ys = tiles.map(t => t.position.y)
-    ;(window as unknown as { __dbg: Record<string, unknown> }).__dbg[f] = { cnt: cells.length, cols: [], d: d.dot(n), n: n.toArray(), ymin: Math.min(...ys), ymax: Math.max(...ys), dot: tiles.slice(0,3).map(t => t.position.dot(n)) }
     if (cells.length === 0) { flat = false; break }
     const cols = new Set<number>()
     for (const tile of tiles) {
@@ -168,7 +166,6 @@ function checkSolved() {
         if (world.dot(n) > 0.99) cols.add((mesh.material as THREE.MeshStandardMaterial).color.getHex())
       }
     }
-    ;(window as unknown as { __dbg: Record<string, unknown> }).__dbg[f] = { cnt: cells.length, cols: [...cols] }
     if (cols.size > 1) { flat = false; break }
   }
   if (flat && moves > 0) { msgEl.textContent = '✔ SEMUA MUKA RATA'; win() }
