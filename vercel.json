@@ -10,7 +10,24 @@
   ],
   "routes": [
     {
-      "handle": "filesystem"
+      "src": "/circuit/(.*)",
+      "dest": "/apps/circuit/dist/$1"
+    },
+    {
+      "src": "/chaos/(.*)",
+      "dest": "/apps/chaos/dist/$1"
+    },
+    {
+      "src": "/gather/(.*)",
+      "dest": "/apps/gather/dist/$1"
+    },
+    {
+      "src": "/pandora/(.*)",
+      "dest": "/apps/pandora/dist/$1"
+    },
+    {
+      "src": "/wake/(.*)",
+      "dest": "/apps/wake/dist/$1"
     },
     {
       "src": "/circuit",
@@ -35,29 +52,6 @@
     {
       "src": "/",
       "dest": "/apps/circuit/dist/index.html"
-    },
-    {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/circuit/(.*)",
-      "dest": "/apps/circuit/dist/$1"
-    },
-    {
-      "src": "/chaos/(.*)",
-      "dest": "/apps/chaos/dist/$1"
-    },
-    {
-      "src": "/gather/(.*)",
-      "dest": "/apps/gather/dist/$1"
-    },
-    {
-      "src": "/pandora/(.*)",
-      "dest": "/apps/pandora/dist/$1"
-    },
-    {
-      "src": "/wake/(.*)",
-      "dest": "/apps/wake/dist/$1"
     }
   ]
 }
