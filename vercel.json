@@ -1,9 +1,53 @@
 {
   "version": 2,
   "name": "dao-playables",
-  "framework": "vite",
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "installCommand": "npm install",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "public": true,
+  "builds": [
+    {
+      "src": "apps/circuit/dist/**",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "apps/chaos/dist/**",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "apps/gather/dist/**",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "apps/pandora/dist/**",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "apps/wake/dist/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/circuit",
+      "dest": "/apps/circuit/dist/index.html"
+    },
+    {
+      "src": "/chaos",
+      "dest": "/apps/chaos/dist/index.html"
+    },
+    {
+      "src": "/gather",
+      "dest": "/apps/gather/dist/index.html"
+    },
+    {
+      "src": "/pandora",
+      "dest": "/apps/pandora/dist/index.html"
+    },
+    {
+      "src": "/wake",
+      "dest": "/apps/wake/dist/index.html"
+    },
+    {
+      "src": "/",
+      "dest": "/apps/circuit/dist/index.html"
+    }
+  ]
 }

@@ -1,0 +1,21 @@
+{
+  "name": "dao-playables",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "build:circuit": "npm run build --workspace=dao-circuit",
+    "build:chaos": "npm run build --workspace=dao-chaos",
+    "build:gather": "npm run build --workspace=dao-gather",
+    "build:pandora": "npm run build --workspace=dao-pandora",
+    "build:wake": "npm run build --workspace=dao-wake"
+  },
+  "workspaces": [
+    "apps/circuit",
+    "apps/chaos",
+    "apps/gather",
+    "apps/pandora",
+    "apps/wake"
+  ]
+}
