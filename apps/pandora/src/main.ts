@@ -110,7 +110,7 @@ function twist(face: Face, dir = 1, record = true) {
   if (busy) { queue.push(() => twist(face, dir, record)); return }
   busy = true
   const n = axisOf(face)
-  const layer = tiles.filter(t => Math.abs(t.position.clone().sub(n.clone().multiplyScalar(n.dot(t.position))).length()) < 0.01)
+  const layer = tiles.filter(t => Math.abs(t.position.dot(n) - t.userData.home.dot(n)) < 0.01)
   const sel = layer.length ? layer : tiles
   moving.rotation.set(0, 0, 0)
   // detach
