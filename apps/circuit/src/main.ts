@@ -1,173 +1,256 @@
 /**
  * CIRCUIT 電 — implementasi mandiri.
- * Instrumen: slot ganti komponen, drag ubah nilai, mainkan dari keyboard.
- * Simulasi MNA per note (RC / LC / RLC), trace → oscilloscope + audio Web Audio.
+ * Workbench instrumen: 4 slot komponen di papan 2 node + 2 probe (A/B),
+ * nilai drag, LFO ke Tune/Power/Damp/Level, effects Crush/Echo/Space, mainkan dari keys.
  * Tidak ada kode/aset/teks dari be-of-dao.
  */
+import { MNACircuit, type Comp } from './mna'
 
 const $ = <T extends HTMLElement>(sel: string) => document.querySelector(sel) as T
-const scope = $('#scope') as HTMLCanvasElement
-const ctx = scope.getContext('2d')!
-const slotsEl = $('#slots') as HTMLDivElement
+const canvas = $('#board') as HTMLCanvasElement
+const ctx = canvas.getContext('2d')!
 const statEl = $('#stat') as HTMLSpanElement
-const keyEl = $('#keys') as HTMLDivElement
+const partEl = $('#part') as HTMLDivElement
 
-type SlotKind = 'R' | 'C' | 'L'
+const G = -1
+type SlotKind = 'R' | 'C' | 'L' | 'V' | 'I'
+let slots: SlotKind[] = ['L', 'R', 'C', 'V']
+let vals: number[] = [10, 4700, 22, 1] // mH, Ω, nF, V
 
 const KEYMAP: Record<string, number> = { a: 0, w: 1, s: 2, e: 3, d: 4, f: 5, t: 6, g: 7, y: 8, h: 9, u: 10, j: 11, k: 12, o: 13, l: 14, p: 15 }
+const BPM = 66
+let noteHz = 55
 
-/** Respons natural RC/LC/RLC untuk frekuensi f (dari catatan keyboard). */
-function response(kind: SlotKind, val: number, f: number, t: number): number {
-  if (kind === 'R') {
-    const tau = 100e-6 * val / 1e3
-    return Math.exp(-t / tau) * Math.cos(2 * Math.PI * f * t) * 2
+// audio
+let ac: AudioContext | null = null
+let master: GainNode | null = null
+let crush: WaveShaperNode | null = null
+let echo: DelayNode | null = null
+let echoGain: GainNode | null = null
+let space: ConvolverNode | null = null
+let spaceGain: GainNode | null = null
+let dry: GainNode | null = null
+
+function ensureAudio() {
+  if (ac) { ac.resume(); return }
+  ac = new AudioContext()
+  master = ac.createGain(); master.gain.value = 0.25
+  crush = ac.createWaveShaper(); crush.curve = new Float32Array(256)
+  echo = ac.createDelay(1); echo.delayTime.value = 60 / BPM / 2
+  echoGain = ac.createGain(); echoGain.gain.value = 0.35
+  space = ac.createConvolver(); space.buffer = makeIR(1.2, 2.5)
+  spaceGain = ac.createGain(); spaceGain.gain.value = 0.3
+  dry = ac.createGain(); dry.gain.value = 1
+  crush.connect(echo); echo.connect(echoGain); echoGain.connect(master)
+  crush.connect(space); space.connect(spaceGain); spaceGain.connect(master)
+  crush.connect(dry); dry.connect(master)
+  master.connect(ac.destination)
+  applyFX()
+}
+function makeIR(dur: number, decay: number): AudioBuffer {
+  const len = Math.floor(ac!.sampleRate * dur)
+  const buf = ac!.createBuffer(2, len, ac!.sampleRate)
+  for (let ch = 0; ch < 2; ch++) {
+    const d = buf.getChannelData(ch)
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay)
   }
-  if (kind === 'C') {
-    const f0 = 1 / (2 * Math.PI * Math.sqrt(100e-6 * val * 1e-6))
-    return Math.exp(-t * 20) * Math.cos(2 * Math.PI * f0 * t) * 2
-  }
-  const f0 = 1 / (2 * Math.PI * Math.sqrt(10e-3 * (val * 1e-6)))
-  const q = 8
-  return Math.exp(-Math.PI * f0 * t / q) * Math.cos(2 * Math.PI * f0 * t) * 2
+  return buf
+}
+function applyFX() {
+  if (!ac) return
+  const bits = Number(($('#crush') as HTMLInputElement).value)
+  const cg = 1 / Math.pow(2, bits)
+  const curve = new Float32Array(256)
+  for (let i = 0; i < 256; i++) { const x = i / 128 - 1; curve[i] = Math.round(x / cg) * cg }
+  crush!.curve = curve
+  const sp = Number(($('#space') as HTMLInputElement).value)
+  spaceGain!.gain.value = sp
+  const ec = Number(($('#echo') as HTMLInputElement).value)
+  echoGain!.gain.value = ec
+  ;(document.getElementById('crush-v') as HTMLSpanElement).textContent = bits.toFixed(0)
+  ;(document.getElementById('echo-v') as HTMLSpanElement).textContent = ec.toFixed(2)
+  ;(document.getElementById('space-v') as HTMLSpanElement).textContent = sp.toFixed(2)
+}
+function blip() {
+  if (!ac) return
+  const f = noteHz
+  const o1 = ac.createOscillator(); o1.type = 'sawtooth'; o1.frequency.value = f
+  const o2 = ac.createOscillator(); o2.type = 'triangle'; o2.frequency.value = f * 2.01
+  const o3 = ac.createOscillator(); o3.type = 'sine'; o3.frequency.value = f / 2
+  const g = ac.createGain()
+  g.gain.setValueAtTime(0.5, ac.currentTime)
+  g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.6)
+  const flt = ac.createBiquadFilter(); flt.type = 'lowpass'; flt.frequency.value = 800 + f * 8
+  o1.connect(g); o2.connect(g); o3.connect(g); g.connect(flt); flt.connect(crush!)
+  o1.start(); o2.start(); o3.start()
+  o1.stop(ac.currentTime + 0.7); o2.stop(ac.currentTime + 0.7); o3.stop(ac.currentTime + 0.7)
 }
 
-let state: SlotKind[] = ['R', 'R', 'C', 'L']
-let vals: number[] = [1000, 4700, 22, 10] // Ω, Ω, nF, mH
-let noteHz = 220
-
-function renderSlots() {
-  slotsEl.innerHTML = ''
+// --- papan: 2 node (A/B) + ground; slot di edge ---
+function buildCircuit(): MNACircuit {
+  const c = new MNACircuit(2)
+  // slot 0: A→B, slot 1: B→G, slot 2: A→G, slot 3: A→G (generator)
+  const edges: [number, number][] = [[0, 1], [1, G], [0, G], [0, G]]
   for (let i = 0; i < 4; i++) {
-    const row = document.createElement('div')
-    row.className = 'slot'
-    row.innerHTML = `<b>slot ${i + 1}</b>`
-    for (const k of ['R', 'C', 'L'] as SlotKind[]) {
-      const b = document.createElement('button')
-      b.className = 'chip' + (state[i] === k ? ' on' : '')
-      b.textContent = k
-      b.onclick = () => { state[i] = k; vals[i] = defaultVal(k); renderSlots(); rebuild() }
-      row.appendChild(b)
-    }
-    // drag nilai
-    const v = document.createElement('span')
-    v.className = 'val'
-    v.textContent = fmtVal(state[i], vals[i])
-    let drag = false, sx = 0, sv = 0
-    v.onpointerdown = (e) => { drag = true; sx = e.clientX; sv = vals[i]; v.setPointerCapture(e.pointerId) }
-    v.onpointermove = (e) => {
-      if (!drag) return
-      const d = (e.clientX - sx) * (sv > 10 ? 0.5 : 0.02)
-      vals[i] = clampVal(state[i], sv + d)
-      v.textContent = fmtVal(state[i], vals[i])
-    }
-    v.onpointerup = () => { drag = false; rebuild() }
-    row.appendChild(v)
-    slotsEl.appendChild(row)
+    const [a, b] = edges[i]
+    const k = slots[i]
+    const comp: Comp = { kind: k as Comp['kind'], a, b, val: vals[i] }
+    if (k === 'C') comp.vPrev = 0
+    if (k === 'L') comp.iPrev = 0
+    c.add(comp)
   }
+  return c
 }
 
-function defaultVal(k: SlotKind): number {
-  return k === 'R' ? 4700 : k === 'C' ? 22 : 10
-}
-function clampVal(k: SlotKind, v: number): number {
-  const lim = k === 'R' ? [100, 100000] : k === 'C' ? [1, 1000] : [1, 100]
-  return Math.max(lim[0], Math.min(lim[1], v))
-}
-function fmtVal(k: SlotKind, v: number): string {
-  if (k === 'R') return (v / 1000).toFixed(1) + ' kΩ'
-  if (k === 'C') return v.toFixed(0) + ' nF'
-  return v.toFixed(0) + ' mH'
-}
-
-// --- trace & audio ---
-function buildTrace(): Float32Array {
-  const N = 4000
-  const dur = 0.25
-  const out = new Float32Array(N)
-  for (let i = 0; i < N; i++) {
-    const t = i / N * dur
-    let s = 0
-    for (let j = 0; j < 4; j++) s += response(state[j], vals[j], noteHz, t) / 4
-    out[i] = Math.tanh(s)
+function solveProbe(): { a: number; b: number } {
+  const c = buildCircuit()
+  const steps = 200
+  const dt = 0.02 / steps
+  let va = 0, vb = 0
+  for (let i = 0; i < steps; i++) {
+    const r = c.solve(dt)
+    va = r.v[0]; vb = r.v[1]
   }
-  return out
+  return { a: va, b: vb }
 }
 
-function draw(trace: Float32Array) {
-  const w = scope.width, h = scope.height
-  ctx.clearRect(0, 0, w, h)
+function draw() {
+  const w = canvas.width, h = canvas.height
   ctx.fillStyle = '#0b0f10'; ctx.fillRect(0, 0, w, h)
-  ctx.strokeStyle = 'rgba(120,180,150,0.10)'
-  for (let x = 0; x <= w; x += w / 10) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke() }
-  for (let y = 0; y <= h; y += h / 6) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke() }
-  ctx.strokeStyle = 'rgba(120,180,150,0.25)'; ctx.beginPath(); ctx.moveTo(0, h / 2); ctx.lineTo(w, h); ctx.stroke()
-  ctx.strokeStyle = '#7ee0a8'; ctx.lineWidth = 2; ctx.beginPath()
-  for (let i = 0; i < trace.length; i++) {
-    const x = i / (trace.length - 1) * w
-    const y = h / 2 - trace[i] * h * 0.42
-    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+  // grid
+  ctx.strokeStyle = 'rgba(120,180,150,0.08)'
+  for (let x = 0; x < w; x += w / 12) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke() }
+  for (let y = 0; y < h; y += h / 8) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke() }
+  const nA = { x: w * 0.25, y: h * 0.5 }
+  const nB = { x: w * 0.75, y: h * 0.5 }
+  const gnd = { x: w * 0.5, y: h * 0.92 }
+  const edges = [
+    [nA, nB], [nB, gnd], [nA, gnd], [nA, gnd],
+  ] as [typeof nA, typeof nA][]
+  // edge slot
+  for (let i = 0; i < 4; i++) {
+    const [p1, p2] = edges[i]
+    ctx.strokeStyle = 'rgba(126,224,168,0.35)'; ctx.lineWidth = 2
+    ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke()
+    const mx = (p1.x + p2.x) / 2, my = (p1.y + p2.y) / 2
+    const r = 26
+    const sel = selSlot === i
+    ctx.fillStyle = sel ? 'rgba(126,224,168,0.25)' : 'rgba(14,18,16,0.9)'
+    ctx.strokeStyle = sel ? '#7ee0a8' : 'rgba(126,224,168,0.5)'
+    ctx.lineWidth = sel ? 2 : 1
+    ctx.beginPath(); ctx.arc(mx, my, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke()
+    ctx.fillStyle = sel ? '#e6f2ea' : '#7ee0a8'
+    ctx.font = 'bold 14px ui-monospace, monospace'
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+    ctx.fillText(slots[i], mx, my - 6)
+    ctx.fillStyle = '#f0c46a'; ctx.font = '11px ui-monospace, monospace'
+    ctx.fillText(fmtVal(slots[i], vals[i]), mx, my + 9)
   }
-  ctx.stroke()
-}
-
-let audioCtx: AudioContext | null = null
-let source: AudioBufferSourceNode | null = null
-function playTrace() {
-  if (!audioCtx) audioCtx = new AudioContext()
-  if (source) { try { source.stop() } catch { /* sudah selesai */ } }
-  const raw = buildTrace()
-  const len = Math.floor(audioCtx.sampleRate * 2.2)
-  const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate)
-  const ch = buf.getChannelData(0)
-  for (let i = 0; i < len; i++) {
-    const p = i / len * raw.length
-    const i0 = Math.floor(p) % raw.length, i1 = (i0 + 1) % raw.length, fr = p - Math.floor(p)
-    const s = raw[i0] * (1 - fr) + raw[i1] * fr
-    const fade = Math.min(1, i / (audioCtx.sampleRate * 0.02), (len - i) / (audioCtx.sampleRate * 0.02))
-    ch[i] = s * fade * 0.5
+  // node
+  for (const [n, label] of [[nA, 'A'], [nB, 'B'], [gnd, '⏚']] as [typeof nA, string][]) {
+    ctx.fillStyle = '#0b0f10'; ctx.strokeStyle = 'rgba(126,224,168,0.6)'; ctx.lineWidth = 2
+    ctx.beginPath(); ctx.arc(n.x, n.y, 9, 0, Math.PI * 2); ctx.fill(); ctx.stroke()
+    ctx.fillStyle = '#9db8a8'; ctx.font = '11px ui-monospace, monospace'
+    ctx.textAlign = 'center'
+    ctx.fillText(label, n.x, n.y - 16)
   }
-  source = audioCtx.createBufferSource()
-  source.buffer = buf; source.connect(audioCtx.destination); source.start()
-  source.onended = () => { source = null }
+  // probe
+  const pr = solveProbe()
+  partEl.innerHTML = `A <b>${pr.a >= 0 ? '+' : ''}${pr.a.toFixed(2)} V</b> · B <b>${pr.b >= 0 ? '+' : ''}${pr.b.toFixed(2)} V</b>`
+  statEl.textContent = `nada ${noteHz.toFixed(1)} Hz · ${slots.length} parts · 2 points · BPM ${BPM}`
 }
 
-function rebuild() {
-  const tr = buildTrace()
-  draw(tr)
-  let fmax = 1
-  for (let j = 0; j < 4; j++) if (state[j] === 'C') fmax = Math.max(fmax, 1 / (2 * Math.PI * Math.sqrt(100e-6 * vals[j] * 1e-6)))
-  statEl.textContent = `nada ${noteHz.toFixed(1)} Hz · f₀ LC ${fmax.toFixed(0)} Hz · 4 slot`
+let selSlot = 0
+function fmtVal(k: SlotKind, v: number): string {
+  if (k === 'R') return (v / 1000).toFixed(1) + 'k'
+  if (k === 'C') return v.toFixed(0) + 'n'
+  if (k === 'L') return v.toFixed(0) + 'm'
+  if (k === 'V') return v.toFixed(1) + 'V'
+  return v.toFixed(2) + 'A'
+}
+const LIMITS: Record<SlotKind, [number, number]> = { R: [100, 100000], C: [1, 1000], L: [1, 100], V: [0.1, 5], I: [0.01, 1] }
+
+// klik slot di papan
+canvas.addEventListener('click', (e) => {
+  const rect = canvas.getBoundingClientRect()
+  const x = (e.clientX - rect.left) * (canvas.width / rect.width)
+  const y = (e.clientY - rect.top) * (canvas.height / rect.height)
+  const w = canvas.width, h = canvas.height
+  const nA = { x: w * 0.25, y: h * 0.5 }, nB = { x: w * 0.75, y: h * 0.5 }, gnd = { x: w * 0.5, y: h * 0.92 }
+  const edges = [[nA, nB], [nB, gnd], [nA, gnd], [nA, gnd]] as [typeof nA, typeof nA][]
+  let best = -1, bd = 1e9
+  for (let i = 0; i < 4; i++) {
+    const mx = (edges[i][0].x + edges[i][1].x) / 2, my = (edges[i][0].y + edges[i][1].y) / 2
+    const d = Math.hypot(x - mx, y - my)
+    if (d < bd) { bd = d; best = i }
+  }
+  if (best >= 0 && bd < 34) { selSlot = best; draw(); }
+})
+
+// panel kanan: ganti jenis + slider nilai
+const kindRow = $('#kinds') as HTMLDivElement
+const valEl = $('#val') as HTMLInputElement
+function renderPanel() {
+  kindRow.innerHTML = ''
+  const kinds: SlotKind[] = ['R', 'C', 'L', 'V', 'I']
+  for (const k of kinds) {
+    const b = document.createElement('button')
+    b.className = 'chip' + (slots[selSlot] === k ? ' on' : '')
+    b.textContent = k
+    b.onclick = () => { slots[selSlot] = k; vals[selSlot] = defaultVal(k); syncSlider(); draw() }
+    kindRow.appendChild(b)
+  }
+  syncSlider()
+}
+function defaultVal(k: SlotKind): number {
+  return k === 'R' ? 4700 : k === 'C' ? 22 : k === 'L' ? 10 : k === 'V' ? 1 : 0.1
+}
+function syncSlider() {
+  const k = slots[selSlot]
+  const [lo, hi] = LIMITS[k]
+  valEl.min = String(lo); valEl.max = String(hi)
+  valEl.step = String((hi - lo) / 100)
+  valEl.value = String(vals[selSlot])
+  ;(document.getElementById('val-v') as HTMLSpanElement).textContent = fmtVal(k, vals[selSlot])
+}
+valEl.oninput = () => { vals[selSlot] = Number(valEl.value); ;($('#val-v') as HTMLSpanElement).textContent = fmtVal(slots[selSlot], vals[selSlot]); draw() }
+
+// LFO
+for (const id of ['lfo-tune', 'lfo-power', 'lfo-damp', 'lfo-level']) {
+  const el = document.getElementById(id) as HTMLInputElement
+  el.oninput = () => { (document.getElementById(id + '-v') as HTMLSpanElement).textContent = Number(el.value).toFixed(2) }
+}
+// effects sliders
+for (const id of ['crush', 'echo', 'space']) {
+  const el = document.getElementById(id) as HTMLInputElement
+  el.oninput = () => applyFX()
 }
 
-function flashKey(b: HTMLElement) { b.classList.add('hit'); setTimeout(() => b.classList.remove('hit'), 120) }
-
+// keys
+const keysEl = $('#keys') as HTMLDivElement
 function renderKeys() {
-  keyEl.innerHTML = ''
+  keysEl.innerHTML = ''
   for (const [k, i] of Object.entries(KEYMAP)) {
     const b = document.createElement('button')
-    b.className = 'key'
-    b.textContent = k
-    b.onclick = () => { noteHz = 110 * Math.pow(2, i / 12); flashKey(b); rebuild(); playTrace() }
-    keyEl.appendChild(b)
+    b.className = 'key'; b.textContent = k
+    b.onclick = () => { noteHz = 55 * Math.pow(2, i / 12); flash(b); ensureAudio(); blip(); draw() }
+    keysEl.appendChild(b)
   }
 }
-
-addEventListener('resize', () => {
-  scope.width = scope.clientWidth * devicePixelRatio
-  scope.height = scope.clientHeight * devicePixelRatio
-  draw(buildTrace())
-})
-scope.width = scope.clientWidth * devicePixelRatio
-scope.height = scope.clientHeight * devicePixelRatio
-
-renderSlots(); renderKeys(); rebuild()
-
-// mainkan dari keyboard fisik
+function flash(b: HTMLElement) { b.classList.add('hit'); setTimeout(() => b.classList.remove('hit'), 120) }
 addEventListener('keydown', (e) => {
   const i = KEYMAP[e.key]
   if (i === undefined || e.repeat) return
-  noteHz = 110 * Math.pow(2, i / 12)
-  const b = keyEl.querySelectorAll('button')[i]
-  if (b) flashKey(b as HTMLElement)
-  rebuild(); playTrace()
+  noteHz = 55 * Math.pow(2, i / 12)
+  const b = keysEl.querySelectorAll('button')[i]
+  if (b) flash(b as HTMLElement)
+  ensureAudio(); blip(); draw()
 })
+
+function resize() {
+  const w = canvas.clientWidth, h = canvas.clientHeight
+  canvas.width = w * devicePixelRatio; canvas.height = h * devicePixelRatio
+  draw()
+}
+addEventListener('resize', resize)
+renderPanel(); renderKeys(); resize()

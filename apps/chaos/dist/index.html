@@ -39,6 +39,8 @@
       font-size: 11px; color: #5c6f62; pointer-events: none;
     }
     footer a { color: #7fb98f; text-decoration: none; }
+    #panel select { width: 100%; background: #0a0c0d; color: #cfe3d6; border: 1px solid rgba(127,185,143,0.3); border-radius: 4px; padding: 3px; font-family: inherit; font-size: 11px; }
+    #panel .chk { display: flex; align-items: center; gap: 6px; color: #9db8a8; }
     #keys { position: fixed; bottom: 44px; left: 0; right: 0; display: flex; justify-content: center; gap: 4px; flex-wrap: wrap; }
     .key { all: unset; cursor: pointer; width: 34px; height: 34px; border-radius: 6px; border: 1px solid rgba(127,185,143,0.35); color: #7fb98f; font-size: 12px; text-align: center; line-height: 34px; background: rgba(10,14,12,0.6); }
     .key:hover { background: rgba(127,185,143,0.15); }
@@ -48,7 +50,7 @@
       #hud { font-size: 11px; }
     }
   </style>
-  <script type="module" crossorigin src="/chaos/assets/index-CJKERLZb.js"></script>
+  <script type="module" crossorigin src="/chaos/assets/index-DXC99gQo.js"></script>
 </head>
 <body>
   <canvas id="c"></canvas>
@@ -64,8 +66,18 @@
     <input id="rho" type="range" min="10" max="60" step="0.1" value="28" />
     <label>β <span class="val" id="b-v">2.667</span></label>
     <input id="beta" type="range" min="1" max="5" step="0.001" value="2.667" />
-    <label>gate <span class="val" id="g-v">0.06</span></label>
-    <input id="gate" type="range" min="0.01" max="0.2" step="0.005" value="0.06" />
+    <label>bentuk <select id="shape">
+      <option>Lorenz</option><option>Rössler</option><option>Halvorsen</option><option>Aizawa</option><option>Thomas</option>
+    </select></label>
+    <label>slice <span class="val" id="sl-v">0.50</span></label>
+    <input id="slice" type="range" min="0" max="1" step="0.02" value="0.5" />
+    <label>exposure <span class="val" id="ex-v">1.00</span></label>
+    <input id="expo" type="range" min="0.3" max="3" step="0.05" value="1" />
+    <label>ribbon <span class="val" id="rb-v">0.60</span></label>
+    <input id="ribbon" type="range" min="0" max="1.5" step="0.05" value="0.6" />
+    <label>stars <span class="val" id="st-v">0</span></label>
+    <input id="stars" type="range" min="0" max="600" step="20" value="0" />
+    <label class="chk"><input id="axes" type="checkbox" checked /> axes</label>
     <button id="audio">○ audio OFF</button>
   </div>
   <div id="keys"></div>
