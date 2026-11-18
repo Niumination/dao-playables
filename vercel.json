@@ -2,14 +2,12 @@
   "version": 2,
   "name": "dao-playables",
   "public": true,
-  "functions": {
-    "apps/*/dist/index.html": {
-      "runtime": "@vercel/static@3.2.6"
-    },
-    "apps/*/dist/assets/**": {
-      "runtime": "@vercel/static@3.2.6"
+  "builds": [
+    {
+      "src": "**",
+      "use": "@vercel/static"
     }
-  },
+  ],
   "rewrites": [
     {
       "source": "/circuit/(.*)",
