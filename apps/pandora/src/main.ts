@@ -138,21 +138,26 @@ function twist(face: Face, dir = 1) {
   animStep()
 }
 function checkSolved() {
-  // muka rata bila semua sticker yang menempel pada muka itu satu warna
   const faces: Face[] = ['U', 'D', 'L', 'R', 'F', 'B']
   let flat = true
   for (const f of faces) {
     const n = axisOf(f)
-    const seen = new Set<number>()
-    for (const t of tiles) {
-      for (const st of t.children) {
+    const d = n.clone().multiplyScalar(SIZE - 1)
+    const cells: THREE.Vector3[] = []
+    for (const tile of tiles) {
+      if (Math.abs(tile.userData.home.dot(n) - d.dot(n)) < 0.01) cells.push(tile.userData.home)
+    }
+    const cols = new Set<number>()
+    for (const tile of tiles) {
+      if (!cells.some(c => c.equals(tile.userData.home))) continue
+      for (const st of tile.children) {
         const mesh = st as THREE.Mesh
         if (mesh.geometry !== stickerGeo) continue
-        const world = st.position.clone().normalize().applyQuaternion(t.quaternion)
-        if (world.dot(n) > 0.99) seen.add((mesh.material as THREE.MeshStandardMaterial).color.getHex())
+        const world = st.position.clone().normalize().applyQuaternion(tile.quaternion)
+        if (world.dot(n) > 0.99) cols.add((mesh.material as THREE.MeshStandardMaterial).color.getHex())
       }
     }
-    if (seen.size > 1) { flat = false; break }
+    if (cols.size > 1) { flat = false; break }
   }
   if (flat && moves > 0) { msgEl.textContent = '✔ SEMUA MUKA RATA'; win() }
   else if (moves > 0) msgEl.textContent = `belum rata · ${moves} langkah`
