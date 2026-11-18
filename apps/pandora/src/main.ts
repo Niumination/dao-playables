@@ -152,7 +152,7 @@ function checkSolved() {
     const d = n.clone().multiplyScalar(SIZE - 1)
     const cells: THREE.Mesh[] = []
     for (const tile of tiles) {
-      const dist = tile.position.dot(n)
+      const dist = tile.position.clone().dot(n)
       if (Math.abs(dist - d.dot(n)) < 0.01) cells.push(tile)
     }
     ;(window as unknown as { __dbg: Record<string, unknown> }).__dbg[f] = { cnt: cells.length, cols: [], d: d.dot(n), first: tiles[0].position.toArray(), n: n.toArray() }
