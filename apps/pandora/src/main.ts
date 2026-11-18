@@ -152,14 +152,14 @@ function checkSolved() {
     const d = n.clone().multiplyScalar(SIZE - 1)
     const cells: THREE.Vector3[] = []
     for (const tile of tiles) {
-      const dist = tile.position.y * n.y + tile.position.x * n.x + tile.position.z * n.z
-      if (Math.abs(dist - d.dot(n)) < 0.01) cells.push(tile.userData.home)
+      const dist = tile.position.dot(n)
+      if (Math.abs(dist - d.dot(n)) < 0.01) cells.push(tile)
     }
-    ;(window as unknown as { __dbg: Record<string, unknown> }).__dbg[f] = { cnt: cells.length, cols: [], ys: tiles.slice(0,5).map(t => +t.position.y.toFixed(2)) }
+    ;(window as unknown as { __dbg: Record<string, unknown> }).__dbg[f] = { cnt: cells.length, cols: [] }
     if (cells.length === 0) { flat = false; break }
     const cols = new Set<number>()
     for (const tile of tiles) {
-      if (!cells.some(c => c.equals(tile.userData.home))) continue
+      if (!cells.includes(tile)) continue
       for (const st of tile.children) {
         const mesh = st as THREE.Mesh
         if (mesh.geometry !== stickerGeo) continue
