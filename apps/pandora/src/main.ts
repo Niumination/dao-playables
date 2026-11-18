@@ -138,24 +138,24 @@ function twist(face: Face, dir = 1) {
   animStep()
 }
 function checkSolved() {
+  // muka rata bila semua sticker yang menempel pada muka itu satu warna
   const faces: Face[] = ['U', 'D', 'L', 'R', 'F', 'B']
-  let solved = true
+  let flat = true
   for (const f of faces) {
     const n = axisOf(f)
-    const stickerCols = new Set<number>()
+    const seen = new Set<number>()
     for (const t of tiles) {
-      const st = t.children.find(c => (c as THREE.Mesh).geometry === stickerGeo)
-      if (!st) continue
-      // sticker ini menempel di muka f bila normalnya sejajar n (dalam ruang kubus)
-      const local = st.position.clone().normalize()
-      const world = local.clone().applyQuaternion(t.quaternion)
-      if (world.dot(n) > 0.99) {
-        stickerCols.add(((st as THREE.Mesh).material as THREE.MeshStandardMaterial).color.getHex())
+      for (const st of t.children) {
+        const mesh = st as THREE.Mesh
+        if (mesh.geometry !== stickerGeo) continue
+        const world = st.position.clone().normalize().applyQuaternion(t.quaternion)
+        if (world.dot(n) > 0.99) seen.add((mesh.material as THREE.MeshStandardMaterial).color.getHex())
       }
     }
-    if (stickerCols.size > 1) { solved = false; break }
+    if (seen.size > 1) { flat = false; break }
   }
-  if (solved && moves > 0) { msgEl.textContent = '✔ SEMUA MUKA RATA'; win() }
+  if (flat && moves > 0) { msgEl.textContent = '✔ SEMUA MUKA RATA'; win() }
+  else if (moves > 0) msgEl.textContent = `belum rata · ${moves} langkah`
 }
 function scramble() {
   const faces: Face[] = ['U', 'D', 'L', 'R', 'F', 'B']
