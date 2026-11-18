@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CHAOS 混沌 — dao-playables (rekonstruksi mandiri)</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; margin: 0; }
+    html, body { height: 100%; }
+    body {
+      background: #0a0c0d; color: #cfd8d0; overflow: hidden;
+      font-family: 'SF Mono', ui-monospace, Menlo, monospace;
+    }
+    canvas { display: block; width: 100vw; height: 100vh; }
+    #hud {
+      position: fixed; top: 14px; left: 16px; pointer-events: none;
+      font-size: 12px; color: #8fa396; line-height: 1.7;
+    }
+    #hud b { color: #e8f0e8; letter-spacing: 0.05em; }
+    #hud .zh { color: #7fb98f; }
+    #panel {
+      position: fixed; top: 14px; right: 16px; width: 230px;
+      background: rgba(10, 14, 12, 0.72); border: 1px solid rgba(127, 185, 143, 0.25);
+      border-radius: 10px; padding: 12px 14px; font-size: 12px;
+      backdrop-filter: blur(6px);
+    }
+    #panel h2 { font-size: 11px; color: #7fb98f; letter-spacing: 0.12em; margin-bottom: 8px; }
+    #panel label { display: block; margin: 8px 0 2px; color: #9fb3a4; }
+    #panel input[type=range] { width: 100%; accent-color: #7fb98f; }
+    #panel .val { color: #e8f0e8; }
+    #panel button {
+      all: unset; cursor: pointer; margin-top: 10px; padding: 6px 10px; border-radius: 6px;
+      border: 1px solid rgba(127, 185, 143, 0.4); color: #7fb98f; font-size: 11px; text-align: center;
+    }
+    #panel button:hover { background: rgba(127, 185, 143, 0.12); }
+    footer {
+      position: fixed; bottom: 10px; left: 0; right: 0; text-align: center;
+      font-size: 11px; color: #5c6f62; pointer-events: none;
+    }
+    footer a { color: #7fb98f; text-decoration: none; }
+    @media (max-width: 640px) {
+      #panel { width: 180px; padding: 10px; font-size: 11px; }
+      #hud { font-size: 11px; }
+    }
+  </style>
+  <script type="module" crossorigin src="./assets/index-CAsjAIcm.js"></script>
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <div id="hud">
+    <b>CHAOS</b> <span class="zh">混沌</span><br />
+    <span id="stat">—</span>
+  </div>
+  <div id="panel">
+    <h2>PARAMETER</h2>
+    <label>σ <span class="val" id="s-v">10</span></label>
+    <input id="sigma" type="range" min="5" max="20" step="0.1" value="10" />
+    <label>ρ <span class="val" id="r-v">28</span></label>
+    <input id="rho" type="range" min="10" max="60" step="0.1" value="28" />
+    <label>β <span class="val" id="b-v">2.667</span></label>
+    <input id="beta" type="range" min="1" max="5" step="0.001" value="2.667" />
+    <label>partikel <span class="val" id="n-v">700</span></label>
+    <input id="count" type="range" min="100" max="2500" step="50" value="700" />
+    <button id="reset">↻ reset jejak</button>
+  </div>
+  <footer>
+    Implementasi ulang mandiri — terinspirasi karya <a href="https://be-of-dao.com" rel="noopener">be-of-dao / DAO</a>.
+    Bukan salinan: kode & desain ditulis dari nol. © 2026 Niumination.
+  </footer>
+</body>
+</html>
