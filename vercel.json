@@ -10,48 +10,28 @@
   ],
   "rewrites": [
     {
-      "source": "/circuit/(.*)",
-      "destination": "/apps/circuit/dist/$1"
-    },
-    {
       "source": "/circuit",
-      "destination": "/apps/circuit/dist/index.html"
-    },
-    {
-      "source": "/chaos/(.*)",
-      "destination": "/apps/chaos/dist/$1"
+      "destination": "/circuit/"
     },
     {
       "source": "/chaos",
-      "destination": "/apps/chaos/dist/index.html"
-    },
-    {
-      "source": "/gather/(.*)",
-      "destination": "/apps/gather/dist/$1"
+      "destination": "/chaos/"
     },
     {
       "source": "/gather",
-      "destination": "/apps/gather/dist/index.html"
-    },
-    {
-      "source": "/pandora/(.*)",
-      "destination": "/apps/pandora/dist/$1"
+      "destination": "/gather/"
     },
     {
       "source": "/pandora",
-      "destination": "/apps/pandora/dist/index.html"
-    },
-    {
-      "source": "/wake/(.*)",
-      "destination": "/apps/wake/dist/$1"
+      "destination": "/pandora/"
     },
     {
       "source": "/wake",
-      "destination": "/apps/wake/dist/index.html"
+      "destination": "/wake/"
     },
     {
       "source": "/",
-      "destination": "/apps/circuit/dist/index.html"
+      "destination": "/circuit/"
     }
   ]
 }
