@@ -150,7 +150,7 @@ function checkSolved() {
   for (const f of faces) {
     const n = axisOf(f)
     const d = n.clone().multiplyScalar(SIZE - 1)
-    const cells: THREE.Vector3[] = []
+    const cells: THREE.Mesh[] = []
     for (const tile of tiles) {
       const dist = tile.position.dot(n)
       if (Math.abs(dist - d.dot(n)) < 0.01) cells.push(tile)
