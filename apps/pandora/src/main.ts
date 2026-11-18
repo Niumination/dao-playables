@@ -1,135 +1,190 @@
 /**
  * PANDORA 樸 — implementasi mandiri.
- * Permukaan 3D generatif dari medan noise (Three.js), kamera orbit pelan.
- * Tidak ada kode/aset/teks dari be-of-dao; hanya mekanisme "generative 3D scene".
+ * Puzzle kubus 3D: 16 ubin kaca di piring, Scramble / Undo / Solve, klik sisi untuk memutar.
+ * Tidak ada kode/aset/teks dari be-of-dao.
  */
 import * as THREE from 'three'
 
 const canvas = document.getElementById('c') as HTMLCanvasElement
 const stat = document.getElementById('stat') as HTMLSpanElement
-const densEl = document.getElementById('dens') as HTMLInputElement
-const rotEl = document.getElementById('rot') as HTMLInputElement
-const scaleEl = document.getElementById('scale') as HTMLInputElement
-const regenBtn = document.getElementById('regen') as HTMLButtonElement
+const movesEl = document.getElementById('moves') as HTMLSpanElement
+const msgEl = document.getElementById('msg') as HTMLSpanElement
+const scrambleBtn = document.getElementById('scramble') as HTMLButtonElement
+const undoBtn = document.getElementById('undo') as HTMLButtonElement
+const solveBtn = document.getElementById('solve') as HTMLButtonElement
+const resetBtn = document.getElementById('reset') as HTMLButtonElement
 
-// --- scene dasar ---
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false })
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2))
-renderer.setClearColor(0x08090b, 1)
+renderer.setClearColor(0x0a0a0c, 1)
 
 const scene = new THREE.Scene()
-scene.fog = new THREE.FogExp2(0x08090b, 0.09)
+scene.fog = new THREE.FogExp2(0x0a0a0c, 0.06)
+const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100)
+camera.position.set(0, 2.6, 4.4)
+camera.lookAt(0, 0.4, 0)
 
-const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100)
-camera.position.set(0, 1.1, 3.2)
-camera.lookAt(0, 0, 0)
+const key = new THREE.PointLight(0xb08fc9, 22, 30); key.position.set(3, 4, 3); scene.add(key)
+const fill = new THREE.PointLight(0x4a6a8a, 10, 30); fill.position.set(-4, 2, 2); scene.add(fill)
+scene.add(new THREE.AmbientLight(0x2a2430, 1.6))
 
-// cahaya: titik ungu lembut + ambient tipis
-const key = new THREE.PointLight(0xb08fc9, 18, 20)
-key.position.set(2.5, 3, 2.5)
-scene.add(key)
-const fill = new THREE.PointLight(0x4a6a8a, 8, 20)
-fill.position.set(-3, -1, 2)
-scene.add(fill)
-scene.add(new THREE.AmbientLight(0x2a2430, 1.4))
+const world = new THREE.Group(); scene.add(world)
+const plate = new THREE.Mesh(
+  new THREE.CylinderGeometry(2.1, 2.1, 0.12, 48),
+  new THREE.MeshStandardMaterial({ color: 0x1a1a20, roughness: 0.6, metalness: 0.3 }),
+)
+plate.position.y = -0.06
+world.add(plate)
+const rim = new THREE.Mesh(
+  new THREE.TorusGeometry(2.1, 0.05, 8, 64),
+  new THREE.MeshStandardMaterial({ color: 0x6a5a8a, roughness: 0.4, metalness: 0.6 }),
+)
+rim.rotation.x = Math.PI / 2
+rim.position.y = 0.0
+world.add(rim)
 
-// --- medan noise sederhana (value noise 2D + smoothing), dipakai utk tinggi permukaan ---
-function hash2(x: number, y: number): number {
-  const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453
-  return s - Math.floor(s)
-}
-function smoothNoise(x: number, y: number): number {
-  const xi = Math.floor(x), yi = Math.floor(y)
-  const xf = x - xi, yf = y - yi
-  const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf)
-  const a = hash2(xi, yi), b = hash2(xi + 1, yi), c = hash2(xi, yi + 1), d = hash2(xi + 1, yi + 1)
-  return a * (1 - u) * (1 - v) + b * u * (1 - v) + c * (1 - u) * v + d * u * v
-}
-function fbm(x: number, y: number, oct = 4): number {
-  let sum = 0, amp = 0.5, f = 1
-  for (let i = 0; i < oct; i++) {
-    sum += amp * smoothNoise(x * f, y * f)
-    amp *= 0.5; f *= 2
-  }
-  return sum
-}
+type Tile = { mesh: THREE.Mesh; home: THREE.Vector3; face: number }
+const tiles: Tile[] = []
+const GLASS = [0xb08fc9, 0x7fa8c9, 0xc98fa8, 0x8fc9a8]
+const size = 0.46, gap = 0.04
+const half = (4 * size + 3 * gap) / 2 - size / 2
 
-let mesh: THREE.Mesh | null = null
-let geo: THREE.BufferGeometry | null = null
-let dens = 0.9
-let rotSpeed = 0.25
-let scaleV = 1.0
-let seed = 1.0
+function tileColor(face: number): number { return GLASS[face % GLASS.length] }
 
 function build() {
-  if (mesh) { scene.remove(mesh); geo?.dispose() }
-  const seg = 110
-  geo = new THREE.PlaneGeometry(3.4, 3.4, seg, seg)
-  geo.rotateX(-Math.PI / 2)
-  const pos = geo.attributes.position as THREE.BufferAttribute
-  for (let i = 0; i < pos.count; i++) {
-    const x = pos.getX(i), z = pos.getZ(i)
-    const h = fbm(x * 1.1 + seed, z * 1.1 - seed, 5)
-    pos.setY(i, (h - 0.5) * dens * 1.4)
+  for (const t of tiles) { world.remove(t.mesh); t.mesh.geometry.dispose(); (t.mesh.material as THREE.Material).dispose() }
+  tiles.length = 0
+  let n = 0
+  for (let row = 0; row < 4; row++) {
+    for (let col = 0; col < 4; col++) {
+      const face = Math.floor(n / 16 * 4)
+      const g = new THREE.BoxGeometry(size, 0.08, size)
+      const m = new THREE.MeshStandardMaterial({
+        color: tileColor(face), roughness: 0.15, metalness: 0.1,
+        transparent: true, opacity: 0.85,
+        emissive: tileColor(face), emissiveIntensity: 0.15,
+      })
+      const mesh = new THREE.Mesh(g, m)
+      const x = -half + col * (size + gap)
+      const z = -half + row * (size + gap)
+      mesh.position.set(x, 0.04, z)
+      mesh.userData.face = face
+      mesh.userData.row = row
+      mesh.userData.col = col
+      world.add(mesh)
+      tiles.push({ mesh, home: new THREE.Vector3(x, 0.04, z), face })
+      n++
+    }
   }
-  geo.computeVertexNormals()
-  const mat = new THREE.MeshStandardMaterial({
-    color: 0x8a7fa8,
-    metalness: 0.25,
-    roughness: 0.55,
-    flatShading: true,
-    side: THREE.DoubleSide,
-  })
-  mesh = new THREE.Mesh(geo, mat)
-  scene.add(mesh)
+  moves = 0; history = []
+  movesEl.textContent = '0'
+  msgEl.textContent = 'selaraskan 16 ubin ke satu muka'
+  stat.textContent = '16 ubin · 4 muka'
 }
+
+// --- logika puzzle: tiap klik memutar 2×2 ubin di sekitarnya ---
+let moves = 0
+let history: { tile: Tile; from: THREE.Vector3 }[] = []
+function twist(cx: number, cy: number) {
+  // putar blok 2x2 di sekitar (cx,cy)
+  const group = tiles.filter(t => Math.abs(t.mesh.position.x - cx) <= (size + gap) * 0.6 && Math.abs(t.mesh.position.z - cy) <= (size + gap) * 0.6)
+  if (group.length < 4) return
+  const items = group.map(t => ({ t, x: t.mesh.position.x, z: t.mesh.position.z }))
+  for (const it of items) {
+    // rotasi 90° searah jarum jam terhadap pusat (cx,cy)
+    const dx = it.x - cx, dz = it.z - cy
+    const nx = cx - dz, nz = cy + dx
+    history.push({ tile: it.t, from: new THREE.Vector3(it.x, it.t.mesh.position.y, it.z) })
+    it.t.mesh.position.x = nx; it.t.mesh.position.z = nz
+  }
+  // siklus muka: ubin yang ikut berputar berganti muka
+  for (const it of items) {
+    it.t.face = (it.t.face + 1) % 4
+    const m = it.t.mesh.material as THREE.MeshStandardMaterial
+    m.color.setHex(tileColor(it.t.face))
+    m.emissive.setHex(tileColor(it.t.face))
+  }
+  moves++
+  movesEl.textContent = String(moves)
+  checkSolved()
+}
+
+function checkSolved() {
+  const f = tiles[0].face
+  const ok = tiles.every(t => t.face === f)
+  msgEl.textContent = ok ? '✓ selesai — satu muka!' : `langkah ${moves}`
+  msgEl.className = ok ? 'ok' : ''
+}
+
+function scramble() {
+  for (let i = 0; i < 24; i++) {
+    const cx = tiles[Math.floor(Math.random() * tiles.length)].mesh.position.x
+    const cy = tiles[Math.floor(Math.random() * tiles.length)].mesh.position.z
+    const f = tiles.find(t => Math.abs(t.mesh.position.x - cx) < 0.01 && Math.abs(t.mesh.position.z - cy) < 0.01)
+    if (f) twist(f.mesh.position.x, f.mesh.position.z)
+  }
+  msgEl.textContent = 'acak — selesaikan!'
+}
+
+function undo() {
+  const h = history.pop()
+  if (!h) return
+  h.tile.mesh.position.copy(h.from)
+  h.tile.face = (h.tile.face + 3) % 4
+  const m = h.tile.mesh.material as THREE.MeshStandardMaterial
+  m.color.setHex(tileColor(h.tile.face)); m.emissive.setHex(tileColor(h.tile.face))
+  moves--; movesEl.textContent = String(moves); checkSolved()
+}
+
+function solve() {
+  // buat semua muka sama dengan muka ubin pertama (langkah naif: putar tiap ubin)
+  while (!tiles.every(t => t.face === tiles[0].face)) {
+    for (const t of tiles) {
+      while (t.face !== tiles[0].face) {
+        t.face = (t.face + 1) % 4
+        const m = t.mesh.material as THREE.MeshStandardMaterial
+        m.color.setHex(tileColor(t.face)); m.emissive.setHex(tileColor(t.face))
+      }
+    }
+  }
+  msgEl.textContent = '✓ terpecahkan'
+  msgEl.className = 'ok'
+}
+
+scrambleBtn.onclick = scramble
+undoBtn.onclick = undo
+solveBtn.onclick = solve
+resetBtn.onclick = build
+
+// --- interaksi: klik ubin → putar 2x2 ---
+const ray = new THREE.Raycaster()
+canvas.addEventListener('click', (e) => {
+  const nd = new THREE.Vector2((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1)
+  ray.setFromCamera(nd, camera)
+  const hit = ray.intersectObjects(tiles.map(t => t.mesh), false)
+  if (hit.length) {
+    const m = hit[0].object as THREE.Mesh
+    twist(m.position.x, m.position.z)
+  }
+})
+
+let yaw = 0.2
+canvas.addEventListener('pointermove', (e) => {
+  if (e.buttons & 1) yaw += e.movementX * 0.004
+})
 
 function resize() {
   const w = innerWidth, h = innerHeight
   renderer.setSize(w, h, false)
-  camera.aspect = w / h
-  camera.updateProjectionMatrix()
+  camera.aspect = w / h; camera.updateProjectionMatrix()
 }
-
-let frameCounter = 0, fps = 0, lastFpsT = performance.now(), last = lastFpsT
-let t = 0
-
-function frame(now: number) {
-  const elapsed = (now - last) / 1000
-  void elapsed
-  last = now
-  frameCounter++
-  if (now - lastFpsT > 500) {
-    fps = frameCounter * 1000 / (now - lastFpsT)
-    frameCounter = 0
-    lastFpsT = now
-  }
-  t += 1 / 60
-  if (mesh) {
-    mesh.rotation.y = t * rotSpeed * 0.4
-    mesh.rotation.x = Math.sin(t * 0.18) * 0.06
-    const s = scaleV * (1 + Math.sin(t * 0.4) * 0.02)
-    mesh.scale.set(s, s, s)
-    key.intensity = 16 + Math.sin(t * 0.7) * 5
-  }
-  renderer.render(scene, camera)
-  stat.textContent = `fps ${fps.toFixed(0)} · butir ${geo ? (geo.attributes.position as THREE.BufferAttribute).count : 0} · skala ${scaleV.toFixed(2)}`
-  requestAnimationFrame(frame)
-}
-
-function syncLabels() {
-  ;(document.getElementById('d-v') as HTMLSpanElement).textContent = dens.toFixed(2)
-  ;(document.getElementById('r-v') as HTMLSpanElement).textContent = rotSpeed.toFixed(2)
-  ;(document.getElementById('s-v') as HTMLSpanElement).textContent = scaleV.toFixed(2)
-}
-
-densEl.oninput = () => { dens = Number(densEl.value); syncLabels(); build() }
-rotEl.oninput = () => { rotSpeed = Number(rotEl.value); syncLabels() }
-scaleEl.oninput = () => { scaleV = Number(scaleEl.value); syncLabels() }
-regenBtn.onclick = () => { seed = Math.random() * 100; build() }
 addEventListener('resize', resize)
-
 resize()
 build()
-syncLabels()
+
+function frame(now: number) {
+  world.rotation.y = yaw + Math.sin(now / 6000) * 0.05
+  renderer.render(scene, camera)
+  requestAnimationFrame(frame)
+}
 requestAnimationFrame(frame)

@@ -18,6 +18,9 @@
     #panel label { display: block; margin: 8px 0 2px; color: #b3a9bd; }
     #panel input[type=range] { width: 100%; accent-color: #b08fc9; }
     #panel .val { color: #efeaf2; }
+    #panel #msg { display: block; font-size: 11px; color: #b8aed0; margin-top: 8px; min-height: 2em; }
+    #panel #msg.ok { color: #8fc9a8; }
+    #hud .hint { color: #6e6378; font-size: 11px; }
     #panel button { all: unset; cursor: pointer; margin-top: 10px; padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(176, 143, 201, 0.4); color: #b08fc9; font-size: 11px; text-align: center; display: block; }
     #panel button:hover { background: rgba(176, 143, 201, 0.12); }
     footer { position: fixed; bottom: 10px; left: 0; right: 0; text-align: center; font-size: 11px; color: #5e5763; pointer-events: none; }
@@ -27,16 +30,15 @@
 </head>
 <body>
   <canvas id="c"></canvas>
-  <div id="hud"><b>PANDORA</b> <span class="zh">樸</span><br /><span id="stat">—</span></div>
+  <div id="hud"><b>PANDORA</b> <span class="zh">樸</span><br /><span id="stat">—</span><br /><span class="hint">klik ubin = putar 2×2 · drag = putar piring</span></div>
   <div id="panel">
-    <h2>PARAMETER</h2>
-    <label>kepadatan butir <span class="val" id="d-v">0.9</span></label>
-    <input id="dens" type="range" min="0.2" max="2" step="0.05" value="0.9" />
-    <label>rotasi <span class="val" id="r-v">0.25</span></label>
-    <input id="rot" type="range" min="0" max="1.2" step="0.01" value="0.25" />
-    <label>skala <span class="val" id="s-v">1.0</span></label>
-    <input id="scale" type="range" min="0.3" max="2.5" step="0.05" value="1.0" />
-    <button id="regen">↻ bentuk baru</button>
+    <h2>PUZZLE</h2>
+    <span id="moves" class="val">0</span> <span class="val">langkah</span>
+    <span id="msg">selaraskan 16 ubin ke satu muka</span>
+    <button id="scramble">⟳ acak</button>
+    <button id="undo">↩ undo</button>
+    <button id="solve">✓ solve</button>
+    <button id="reset">↻ susun ulang</button>
   </div>
   <footer>
     Implementasi ulang mandiri — terinspirasi karya <a href="https://be-of-dao.com" rel="noopener">be-of-dao / DAO</a>.
