@@ -104,7 +104,11 @@ const moving = new THREE.Group()
 scene.add(moving)
 let moves = 0, history: { face: Face; dir: number }[] = []
 let selected: Face = 'F'
+let busy = false
+const queue: (() => void) [] = []
 function twist(face: Face, dir = 1, record = true) {
+  if (busy) { queue.push(() => twist(face, dir, record)); return }
+  busy = true
   const n = axisOf(face)
   const layer = tiles.filter(t => Math.abs(t.position.clone().sub(n.clone().multiplyScalar(n.dot(t.position))).length()) < 0.01)
   const sel = layer.length ? layer : tiles
@@ -133,6 +137,9 @@ function twist(face: Face, dir = 1, record = true) {
     msgEl.textContent = `muka ${face} ${dir > 0 ? 'searah' : 'berlawanan'} jarum jam · ${sel.length} ubin`
     blip(face)
     checkSolved()
+    busy = false
+    const next = queue.shift()
+    if (next) next()
   }
   animStep()
 }
@@ -163,9 +170,10 @@ function checkSolved() {
   else if (moves > 0) msgEl.textContent = `belum rata · ${moves} langkah`
 }
 function scramble() {
+  if (busy) { msgEl.textContent = 'masih berputar…'; return }
   const faces: Face[] = ['U', 'D', 'L', 'R', 'F', 'B']
-  let i = 0
   const n = 24
+  let i = 0
   const iv = setInterval(() => {
     if (i >= n) { clearInterval(iv); return }
     const f = faces[Math.floor(Math.random() * faces.length)]
@@ -182,15 +190,16 @@ function undo() {
   twist(last.face, -last.dir, false)
 }
 function solve() {
+  if (busy) { queue.push(() => solve()); return }
   msgEl.textContent = 'menyelesaikan…'
-  let i = history.length - 1
+  const steps = history.splice(0).reverse()
+  let i = 0
   const iv = setInterval(() => {
-    if (i < 0) { clearInterval(iv); msgEl.textContent = 'selesai'; return }
-    const h = history[i]
-    history.pop()
+    if (i >= steps.length) { clearInterval(iv); msgEl.textContent = 'selesai'; checkSolved(); return }
+    const h = steps[i]
     twist(h.face, -h.dir, false)
-    i--
-  }, 220)
+    i++
+  }, 260)
 }
 
 // --- audio ---
