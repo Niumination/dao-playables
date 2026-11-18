@@ -8,30 +8,33 @@
       "use": "@vercel/static"
     }
   ],
-  "rewrites": [
+  "routes": [
     {
-      "source": "/circuit",
-      "destination": "/circuit/"
+      "handle": "filesystem"
     },
     {
-      "source": "/chaos",
-      "destination": "/chaos/"
+      "src": "/circuit",
+      "dest": "/apps/circuit/dist/index.html"
     },
     {
-      "source": "/gather",
-      "destination": "/gather/"
+      "src": "/chaos",
+      "dest": "/apps/chaos/dist/index.html"
     },
     {
-      "source": "/pandora",
-      "destination": "/pandora/"
+      "src": "/gather",
+      "dest": "/apps/gather/dist/index.html"
     },
     {
-      "source": "/wake",
-      "destination": "/wake/"
+      "src": "/pandora",
+      "dest": "/apps/pandora/dist/index.html"
     },
     {
-      "source": "/",
-      "destination": "/circuit/"
+      "src": "/wake",
+      "dest": "/apps/wake/dist/index.html"
+    },
+    {
+      "src": "/",
+      "dest": "/apps/circuit/dist/index.html"
     }
   ]
 }
