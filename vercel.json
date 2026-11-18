@@ -10,24 +10,24 @@
   ],
   "routes": [
     {
-      "src": "/circuit/(.*)",
-      "dest": "/apps/circuit/dist/$1"
+      "src": "/circuit/assets/(.*)",
+      "dest": "/apps/circuit/dist/assets/$1"
     },
     {
-      "src": "/chaos/(.*)",
-      "dest": "/apps/chaos/dist/$1"
+      "src": "/chaos/assets/(.*)",
+      "dest": "/apps/chaos/dist/assets/$1"
     },
     {
-      "src": "/gather/(.*)",
-      "dest": "/apps/gather/dist/$1"
+      "src": "/gather/assets/(.*)",
+      "dest": "/apps/gather/dist/assets/$1"
     },
     {
-      "src": "/pandora/(.*)",
-      "dest": "/apps/pandora/dist/$1"
+      "src": "/pandora/assets/(.*)",
+      "dest": "/apps/pandora/dist/assets/$1"
     },
     {
-      "src": "/wake/(.*)",
-      "dest": "/apps/wake/dist/$1"
+      "src": "/wake/assets/(.*)",
+      "dest": "/apps/wake/dist/assets/$1"
     },
     {
       "src": "/circuit",
