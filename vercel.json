@@ -2,52 +2,58 @@
   "version": 2,
   "name": "dao-playables",
   "public": true,
-  "builds": [
-    {
-      "src": "apps/circuit/dist/**",
-      "use": "@vercel/static"
+  "functions": {
+    "apps/*/dist/index.html": {
+      "runtime": "@vercel/static@3.2.6"
     },
-    {
-      "src": "apps/chaos/dist/**",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "apps/gather/dist/**",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "apps/pandora/dist/**",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "apps/wake/dist/**",
-      "use": "@vercel/static"
+    "apps/*/dist/assets/**": {
+      "runtime": "@vercel/static@3.2.6"
     }
-  ],
-  "routes": [
+  },
+  "rewrites": [
     {
-      "src": "/circuit",
-      "dest": "/apps/circuit/dist/index.html"
+      "source": "/circuit/(.*)",
+      "destination": "/apps/circuit/dist/$1"
     },
     {
-      "src": "/chaos",
-      "dest": "/apps/chaos/dist/index.html"
+      "source": "/circuit",
+      "destination": "/apps/circuit/dist/index.html"
     },
     {
-      "src": "/gather",
-      "dest": "/apps/gather/dist/index.html"
+      "source": "/chaos/(.*)",
+      "destination": "/apps/chaos/dist/$1"
     },
     {
-      "src": "/pandora",
-      "dest": "/apps/pandora/dist/index.html"
+      "source": "/chaos",
+      "destination": "/apps/chaos/dist/index.html"
     },
     {
-      "src": "/wake",
-      "dest": "/apps/wake/dist/index.html"
+      "source": "/gather/(.*)",
+      "destination": "/apps/gather/dist/$1"
     },
     {
-      "src": "/",
-      "dest": "/apps/circuit/dist/index.html"
+      "source": "/gather",
+      "destination": "/apps/gather/dist/index.html"
+    },
+    {
+      "source": "/pandora/(.*)",
+      "destination": "/apps/pandora/dist/$1"
+    },
+    {
+      "source": "/pandora",
+      "destination": "/apps/pandora/dist/index.html"
+    },
+    {
+      "source": "/wake/(.*)",
+      "destination": "/apps/wake/dist/$1"
+    },
+    {
+      "source": "/wake",
+      "destination": "/apps/wake/dist/index.html"
+    },
+    {
+      "source": "/",
+      "destination": "/apps/circuit/dist/index.html"
     }
   ]
 }
