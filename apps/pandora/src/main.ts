@@ -86,8 +86,12 @@ function build() {
 let moves = 0
 let history: { tile: Tile; from: THREE.Vector3 }[] = []
 function twist(cx: number, cy: number) {
-  // putar blok 2x2 di sekitar (cx,cy)
-  const group = tiles.filter(t => Math.abs(t.mesh.position.x - cx) <= (size + gap) * 0.6 && Math.abs(t.mesh.position.z - cy) <= (size + gap) * 0.6)
+  // putar blok 2x2 di sekitar (cx,cy): ubin pada keempat kuadran ±(size+gap)/2
+  const d = (size + gap) / 2
+  const group = tiles.filter(t => {
+    const dx = t.mesh.position.x - cx, dz = t.mesh.position.z - cy
+    return Math.abs(Math.abs(dx) - d) < 0.05 && Math.abs(Math.abs(dz) - d) < 0.05
+  })
   if (group.length < 4) return
   const items = group.map(t => ({ t, x: t.mesh.position.x, z: t.mesh.position.z }))
   for (const it of items) {
@@ -117,11 +121,11 @@ function checkSolved() {
 }
 
 function scramble() {
+  const d = (size + gap) / 2
   for (let i = 0; i < 24; i++) {
-    const cx = tiles[Math.floor(Math.random() * tiles.length)].mesh.position.x
-    const cy = tiles[Math.floor(Math.random() * tiles.length)].mesh.position.z
-    const f = tiles.find(t => Math.abs(t.mesh.position.x - cx) < 0.01 && Math.abs(t.mesh.position.z - cy) < 0.01)
-    if (f) twist(f.mesh.position.x, f.mesh.position.z)
+    const cx = -half + Math.floor(Math.random() * 3) * (size + gap)
+    const cy = -half + Math.floor(Math.random() * 3) * (size + gap)
+    twist(cx + d, cy + d)
   }
   msgEl.textContent = 'acak — selesaikan!'
 }
@@ -164,7 +168,10 @@ canvas.addEventListener('click', (e) => {
   const hit = ray.intersectObjects(tiles.map(t => t.mesh), false)
   if (hit.length) {
     const m = hit[0].object as THREE.Mesh
-    twist(m.position.x, m.position.z)
+    const d = (size + gap) / 2
+    const sx = m.position.x < 0 ? m.position.x : m.position.x - (size + gap)
+    const sz = m.position.z < 0 ? m.position.z : m.position.z - (size + gap)
+    twist(sx + d, sz + d)
   }
 })
 
