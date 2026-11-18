@@ -155,7 +155,7 @@ function checkSolved() {
       const dist = tile.position.dot(n)
       if (Math.abs(dist - d.dot(n)) < 0.01) cells.push(tile)
     }
-    ;(window as unknown as { __dbg: Record<string, unknown> }).__dbg[f] = { cnt: cells.length, cols: [] }
+    ;(window as unknown as { __dbg: Record<string, unknown> }).__dbg[f] = { cnt: cells.length, cols: [], d: d.dot(n), first: tiles[0].position.toArray(), n: n.toArray() }
     if (cells.length === 0) { flat = false; break }
     const cols = new Set<number>()
     for (const tile of tiles) {
