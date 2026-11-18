@@ -145,6 +145,7 @@ function twist(face: Face, dir = 1, record = true) {
 }
 function checkSolved() {
   const faces: Face[] = ['U', 'D', 'L', 'R', 'F', 'B']
+  ;(window as unknown as { __dbg: string[] }).__dbg = []
   let flat = true
   for (const f of faces) {
     const n = axisOf(f)
@@ -155,7 +156,7 @@ function checkSolved() {
       const dist = tile.position.dot(n)
       if (Math.abs(dist - d.dot(n)) < 0.01) cells.push(tile)
     }
-    if (cells.length === 0) { flat = false; break }
+    if (cells.length === 0) { ;(window as unknown as { __dbg: string[] }).__dbg.push(`${f},cnt=0`); flat = false; break }
     const cols = new Set<number>()
     for (const tile of tiles) {
       if (!cells.includes(tile)) continue
@@ -166,6 +167,7 @@ function checkSolved() {
         if (world.dot(n) > 0.99) cols.add((mesh.material as THREE.MeshStandardMaterial).color.getHex())
       }
     }
+    ;(window as unknown as { __dbg: string[] }).__dbg.push(`${f},cnt=${cells.length},set=${cols.size}`)
     if (cols.size > 1) { flat = false; break }
   }
   if (flat && moves > 0) { msgEl.textContent = '✔ SEMUA MUKA RATA'; win() }
